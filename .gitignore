@@ -1,0 +1,13 @@
+node_modules
+package-lock.json
+yarn.lock
+
+src/**/*.js
+src/**/*.js.map
+
+dist
+assets/*
+references
+
+npm-debug.log
+debug.log

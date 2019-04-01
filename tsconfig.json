@@ -1,0 +1,31 @@
+{
+  "compilerOptions": {
+    "outDir": "./dist/",
+    "sourceMap": true,
+    "noImplicitAny": true,
+    "moduleResolution": "node",
+    "target": "es6",
+    "module": "es6",
+    "lib": [
+      "dom",
+      "es2017"
+    ],
+    "experimentalDecorators": true,
+    "allowJs": true,
+    "baseUrl": "./src",
+    "paths": {
+      "gl-utils/*": ["./gl-utils/*"],
+      "shaders/*": ["./shaders/*"],
+      "assets/*": ["../assets/*"]
+    }
+  },
+  "include": [
+    "types/globals.d.ts",
+    "types/gl-matrix.d.ts",
+    "./src"
+  ],
+  "exclude": [
+    "references",
+    "node_modules"
+  ]
+}
