@@ -81,7 +81,7 @@ const initialize = async (): Promise<GlobalVariables> => {
   globals.uISystem.initialize();
 
   //
-  globals.webfx = await initalizeWebFx(globals.gl);
+  globals.webfx = await initalizeWebFx(globals.gl, globals.device.textureBindingState);
 
   //
   globals.resizeSystem.forceRecalc();

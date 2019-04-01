@@ -10,6 +10,8 @@ import {vec2, fromValues as Vec2} from 'gl-vec2';
 import {vec3, fromValues as Vec3, add as addV3} from 'gl-vec3';
 import {create as Vec4} from 'gl-vec4';
 import {transformPointByMat4, clamp} from 'gl-utils';
+
+import {Component, ComponentType} from './_Component';
 import {KeyboardState} from '../InputSystem';
 
 
@@ -31,7 +33,7 @@ const ANGLE_LEFT_RIGHT = 1; // yaw
   * it's easier to create new component.
   * E.g. it has reversed rotation-transform order when calculating view matrix
   */
-export class FpsController {
+export class FpsController extends Component<ComponentType.FpsController> {
 
   public rotateSensitivity = 0.002;
   public moveSensitivity = 0.005;
@@ -101,5 +103,7 @@ export class FpsController {
   }
 
   destroy(_: Webgl) {}
+
+  public static TYPE = ComponentType.FpsController;
 
 }

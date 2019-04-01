@@ -5,7 +5,7 @@ import {DrawParams, DepthTest, CullingMode} from 'gl-utils/DrawParams';
 import {Shader} from 'resources';
 import {Config} from 'Config';
 import {Device} from 'Device';
-import {MeshComponent} from 'components';
+import {MeshComponent, MaterialComponent} from 'components';
 
 
 export interface FrameCamera {
@@ -24,10 +24,15 @@ export interface WebFxDrawParams {
   camera: FrameCamera;
 }
 
+interface Object3d {
+  mesh: MeshComponent;
+  material: MaterialComponent;
+}
+
 
 export class WebFx {
   constructor(
-    private readonly meshes: MeshComponent[],
+    private readonly objects: Object3d[],
     private readonly meshShader: Shader,
   ) {}
 
@@ -49,19 +54,15 @@ export class WebFx {
 
     const modelMatrix = this.getModelMatrix(cfg);
 
-    setUniforms(device, this.meshShader, {
-      'u_M': modelMatrix,
-      'u_MVP': camera.getMVP(modelMatrix),
-      // 'u_viewport': Vec2(viewport.width, viewport.height),
-      // 'u_cameraPosition': camera.position,
-      // 'u_ambientLight': Float32Array.from([...cfg.lighting.ambientCol, cfg.lighting.ambientStr]),
-      // 'u_tiles': Int32Array.from([
-        // cfg.tiles.tileSizeX, cfg.tiles.tileSizeY,
-        // tilesCount[0], tilesCount[1]
-      // ]),
-    }, true);
+    this.objects.forEach(obj => {
+      setUniforms(device, this.meshShader, {
+        'u_M': modelMatrix,
+        'u_MVP': camera.getMVP(modelMatrix),
+        'u_albedoTexture': obj.material.albedoTex,
+      }, true);
 
-    this.meshes.forEach(device.renderMesh);
+      device.renderMesh(obj.mesh);
+    });
   }
 
   private getModelMatrix(cfg: Config) {

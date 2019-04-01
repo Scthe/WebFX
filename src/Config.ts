@@ -10,6 +10,9 @@ export class Config {
 
   public readonly sintelScale = 0.1;
 
+  // public readonly gamma = 2.2;
+
+
   // <editor-fold> CAMERA
   public readonly camera = {
     position: Vec3(0, 2.5, 5),

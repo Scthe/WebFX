@@ -9,6 +9,7 @@ import {
   normalize, subtract
 } from 'gl-vec3';
 import STATIC_GL from './gimme_gl';
+import {TextureBindingState, Texture} from 'resources';
 
 
 export type ArrayBufferView =
@@ -100,4 +101,31 @@ export const IN_DEV_MODE = (f: Function) => {
   if (process.env.DEBUG) {
     f();
   }
+};
+
+export const loadTexture = (
+  gl: Webgl, tbs: TextureBindingState, path: string, texture: Texture
+) => {
+  return new Promise((resolve, reject) => {
+    const img = new Image();
+
+    img.addEventListener('load', () => {
+      const writePoint = {
+        start: Vec3(0, 0, 0),
+        dimensions: texture.dimensions,
+      };
+      const writeSource = {
+        unsizedPixelFormat: gl.RGB_INTEGER,
+        perChannelType: gl.UNSIGNED_BYTE,
+        data: img,
+      };
+      texture.write(gl, tbs, 0, writePoint, writeSource);
+
+      resolve(texture);
+    });
+
+    img.addEventListener('error', reject);
+
+    img.src = path;
+  });
 };
