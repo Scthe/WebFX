@@ -1,0 +1,51 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+
+  <title>ue4-office</title>
+  <meta name="description" content="Recreation of ue4 office scene in webgl">
+
+  <meta name="twitter:card" content="summary">
+  <meta name="twitter:url" content="https://scthe.github.io/ue4-office/dist">
+  <meta name="twitter:title" content="ue4-office">
+  <meta name="twitter:description" content="Recreation of ue4 office scene in webgl">
+
+  <style>
+    html, body {
+     margin: 0;
+  	 padding: 0;
+    }
+    * { box-sizing: border-box; }
+    canvas {
+      display: block;  /* prevents scrollbar */
+      width: 100vw;
+      height: 100vh;
+    }
+
+    .gui-width100 span{ width: 100% !important; }
+
+    #m-stats {
+      color: white;
+      position: absolute;
+      top: 50px; left: 5px;
+      font-size: 13px; font-family: monospace;
+    }
+  </style>
+</head>
+<body>
+  <canvas id='viewport-canvas'></canvas>
+
+  <!-- stats -->
+  <div id="m-stats"></div>
+
+  <script id="m-stats-row-tmpl" type="text/template">
+    <div class="m-stats-row" m-stats-row-name="{{ title }}">
+      <span class="m-stats-row-k">{{ title }}</span>
+      <span class="m-stats-row-v">{{ value }}</span>
+    </div>
+  </script>
+
+</body>
+</html>
