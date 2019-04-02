@@ -42,6 +42,7 @@ const config = ({mode, isProd}) => ({
             { test: /\.(glsl|frag|vert)$/, loader: 'webpack-glsl-loader', },
             { test: /\.(png|jpg|gif)$/, use: 'url-loader?limit=15000&name=[name]-[hash].[ext]', exclude: /node_modules/ },
             { test: /\.obj$/, loader: 'file-loader', exclude: [ /node_modules/ ] },
+            { test: /\.tfx$/, loader: 'file-loader', exclude: [ /node_modules/ ] },
         ],
     },
 

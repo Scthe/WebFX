@@ -3,6 +3,7 @@ export enum ComponentType {
   FpsController,
   Material,
   Mesh,
+  Tfx,
 }
 
 

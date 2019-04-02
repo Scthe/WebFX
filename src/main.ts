@@ -92,8 +92,7 @@ const initialize = async (): Promise<GlobalVariables> => {
 
 
 const createWebFxDrawParams = (globals: GlobalVariables) => {
-  const viewMatrix = globals.camera.controller.viewMatrix;
-  const projectionMatrix = globals.camera.camera.perspectiveMatrix;
+  const {controller, camera} = globals.camera;
 
   return {
     gl: globals.device.gl,
@@ -103,9 +102,10 @@ const createWebFxDrawParams = (globals: GlobalVariables) => {
     camera: {
       getMVP: (modelMatrix: mat4) => getMVP(
         modelMatrix,
-        viewMatrix,
-        projectionMatrix
+        controller.viewMatrix,
+        camera.perspectiveMatrix
       ),
+      position: controller.position,
       // (modelMat: mat4) => modelMat,
     }
   };
@@ -122,11 +122,14 @@ const runMain = (globals: GlobalVariables) => (timeMs: number = 0) => {
 
   const drawParams = createWebFxDrawParams(globals);
   globals.webfx.beginScene(drawParams);
-  globals.webfx.renderMeshes(drawParams);
+  // globals.webfx.renderMeshes(drawParams);
+  globals.webfx.renderHair(drawParams);
 
   // TODO move this at the beginning of the frame,
   // but this would always schedule, so can't crash nicely
+  // throw `--- throwing after 1st frame ---`;
   requestAnimationFrame(runMain(globals));
+
   globals.statsSystem.frameEnd();
 };
 

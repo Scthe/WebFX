@@ -129,3 +129,12 @@ export const loadTexture = (
     img.src = path;
   });
 };
+
+/** No random access to buffers from shaders, we have to use texture */
+export const getSizeOfBufferAsTexture = (gl: Webgl, bufElements: number) => {
+  const maxTexDim = gl.getParameter(gl.MAX_TEXTURE_SIZE);
+  return {
+    width: Math.min(maxTexDim, bufElements),
+    height: Math.ceil(bufElements / maxTexDim), // 'ceil' is important!
+  };
+};
