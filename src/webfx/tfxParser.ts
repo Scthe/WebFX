@@ -1,4 +1,4 @@
-interface TfxFileHeader {
+export interface TfxFileHeader {
   // Specifies TressFX version number
   version: number; // float version;
 

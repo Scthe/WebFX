@@ -38,7 +38,11 @@ export class Device {
 
   renderMesh = (mesh: MeshComponent) => {
     const gl = this.gl;
-    const {vao, indexGlType, indexBuffer, triangleCnt} = mesh;
+    const {
+      vao,
+      indices: {indexGlType, indexBuffer, triangleCnt}
+    } = mesh;
+
     vao.bind(gl);
     indexBuffer.bind(gl);
     gl.drawElements(gl.TRIANGLES, triangleCnt * 3, indexGlType, 0);

@@ -122,7 +122,7 @@ const runMain = (globals: GlobalVariables) => (timeMs: number = 0) => {
 
   const drawParams = createWebFxDrawParams(globals);
   globals.webfx.beginScene(drawParams);
-  // globals.webfx.renderMeshes(drawParams);
+  globals.webfx.renderMeshes(drawParams);
   globals.webfx.renderHair(drawParams);
 
   // TODO move this at the beginning of the frame,

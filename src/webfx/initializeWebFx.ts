@@ -3,7 +3,7 @@ import {vec2, fromValues as Vec2} from 'gl-vec2';
 
 import {Mesh} from 'webgl-obj-loader';
 import {WebFx} from './WebFx';
-import {MeshComponent, MaterialComponent, TfxComponent} from 'components';
+import {MeshComponent, MaterialComponent, TfxComponent, IndexBuffer} from 'components';
 import {
   Vao, VaoAttrType,
   Buffer, BufferType, BufferUsage,
@@ -12,7 +12,7 @@ import {
   TextureFilterMin, TextureFilterMag
 } from 'resources';
 import {loadTexture, getSizeOfBufferAsTexture} from 'gl-utils';
-import {loadTfxFile, TfxFileData} from './tfxParser';
+import {loadTfxFile, TfxFileData, TfxFileHeader} from './tfxParser';
 
 
 const OBJ_FILES = {
@@ -73,9 +73,11 @@ const shoveMeshIntoGpu = (gl: Webgl, mesh: Mesh): MeshComponent => {
   // so it happens this matches MeshComponent
   return new MeshComponent(
     vao,
-    gl.UNSIGNED_SHORT,
-    idxBuf,
-    idxData.length / 3,
+    {
+      indexBuffer: idxBuf,
+      indexGlType: gl.UNSIGNED_SHORT,
+      triangleCnt: idxData.length / 3,
+    }
   );
 };
 
@@ -130,6 +132,61 @@ const writeTexture = (
   texture.write(gl, tbs, 0, writePoint, writeSource);
 };
 
+/** see TressFXAsset::FillTriangleIndexArray */
+const createIndexBuffer = (gl: Webgl, tfxHeader: TfxFileHeader): IndexBuffer => {
+  const idxElements = tfxHeader.numHairStrands * tfxHeader.numVerticesPerStrand;
+  // const idxData = new Uint16Array(idxElements);
+  const idxCpu = Array(idxElements * 6).fill(0);
+  // console.log(idxCpu);
+
+  let id = 0;
+  let iCount = 0;
+
+  for (let i = 0; i < tfxHeader.numHairStrands; i++) {
+    for (let j = 0; j < tfxHeader.numVerticesPerStrand - 1; j++) {
+      idxCpu[iCount++] = 2 * id;
+      idxCpu[iCount++] = 2 * id + 1;
+      idxCpu[iCount++] = 2 * id + 2;
+      idxCpu[iCount++] = 2 * id + 2;
+      idxCpu[iCount++] = 2 * id + 1;
+      idxCpu[iCount++] = 2 * id + 3;
+      id++;
+    }
+    id++;
+  }
+  const idxData = Uint32Array.from(idxCpu);
+  const indexBuffer = Buffer.fromData(gl,
+    BufferType.IndexBuffer, BufferUsage.STATIC_DRAW,
+    idxData
+  );
+  indexBuffer.bind(gl);
+
+  return {
+    indexBuffer,
+    indexGlType: gl.UNSIGNED_INT,
+    triangleCnt: Math.floor(iCount / 3),
+  };
+};
+
+const createVertexIdVAO = (gl: Webgl, verticesCount: number) => {
+  const vCpu = Array(verticesCount).fill(0);
+  for (let i = 0; i < verticesCount; i++) {
+    vCpu[i] = i;
+  }
+  const data = Uint16Array.from(vCpu);
+
+  return new Vao(gl, [
+    {
+      name: 'position',
+      stride: 0,
+      offset: 0,
+      type: VaoAttrType.FLOAT_VEC3,
+      rawData: data,
+    }
+  ]);
+};
+
+
 const shoveTfxIntoGpu = (
   gl: Webgl, tbs: TextureBindingState, tfxFile: TfxFileData
 ): TfxComponent => {
@@ -152,10 +209,14 @@ const shoveTfxIntoGpu = (
 
   writeTexture(gl, tbs, texture, vertexPositionsBuffer);
 
+  const indexBuffer = createIndexBuffer(gl, tfxFile.header);
+
   return new TfxComponent(
     header.numHairStrands,
     header.numVerticesPerStrand,
-    texture
+    texture,
+    indexBuffer,
+    createVertexIdVAO(gl, totalVertices),
   );
 };
 // </editor-fold> // END: TFX

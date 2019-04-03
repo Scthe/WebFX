@@ -73,7 +73,7 @@ export class WebFx {
     const {gl, device, cfg, camera, viewport} = params;
 
     const dp = new DrawParams();
-    dp.depth.test = DepthTest.IfLessOrEqual;
+    dp.depth.test = DepthTest.IfLess;
     dp.culling = CullingMode.None;
     device.setState(dp);
 
@@ -81,7 +81,6 @@ export class WebFx {
 
     const modelMatrix = this.getModelMatrix(cfg);
 
-    // console.log(this.tfxShader);
     setUniforms(device, this.tfxShader, {
       'u_MVP': camera.getMVP(modelMatrix),
       'u_cameraPosition': camera.position,
@@ -89,12 +88,15 @@ export class WebFx {
       'u_viewportSize': Vec2(viewport.width, viewport.height),
       'u_fiberRadius': 0.2,
       'u_vertexPositionsBuffer': this.tfxComponent.positionsTexture,
-    }, true);
+    }, false);
 
-    const totalVertices = this.tfxComponent.totalVertices;
-    gl.drawArrays(gl.TRIANGLES, 0, totalVertices);
-    // gl.drawArrays(gl.TRIANGLES, 0, triangleCnt * 3);
-    // gl.drawArrays(gl.TRIANGLES, 0, 500);
+    // const totalVertices = this.tfxComponent.totalVertices;
+    // gl.drawArrays(gl.TRIANGLES, 0, totalVertices);
+
+    this.tfxComponent._vao.bind(gl);
+    const {indexGlType, indexBuffer, triangleCnt} = this.tfxComponent.indices;
+    indexBuffer.bind(gl);
+    gl.drawElements(gl.TRIANGLES, triangleCnt * 3, indexGlType, 0);
   }
 
   private getModelMatrix(cfg: Config) {
