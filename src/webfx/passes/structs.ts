@@ -3,9 +3,9 @@ import {vec3} from 'gl-vec3';
 
 import {Config} from 'Config';
 import {Device} from 'Device';
-import {WebFx} from 'webfx';
 import {FrameResources} from '../FrameResources';
-import { Dimensions } from 'gl-utils';
+import {Dimensions} from 'gl-utils';
+import {Ecs} from 'ecs';
 
 export interface FrameCamera {
   position: vec3;
@@ -18,7 +18,7 @@ export interface FrameCamera {
 export interface PassExecuteParams {
   cfg: Config;
   device: Device;
-  webFx: WebFx;
+  ecs: Ecs;
   frameRes: FrameResources;
   viewport: Dimensions;
   camera: FrameCamera;

@@ -1,5 +1,5 @@
 import {fromValues as Vec2} from 'gl-vec2';
-import {FpsController} from 'components/FpsController';
+import {FpsController} from 'ecs';
 
 
 const MOUSE_LEFT_BTN = 0; // https://developer.mozilla.org/en-US/docs/Web/API/MouseEvent/button

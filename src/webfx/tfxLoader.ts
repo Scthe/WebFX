@@ -1,6 +1,6 @@
 import {fromValues as Vec3, vec3} from 'gl-vec3';
 
-import {TfxComponent, IndexBuffer} from 'components';
+import {TfxComponent, IndexBuffer} from 'ecs';
 import {
   Buffer, BufferType, BufferUsage,
   Texture, TextureBindingState, TextureType, createTextureOpts,

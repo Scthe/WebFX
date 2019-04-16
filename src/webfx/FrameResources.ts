@@ -32,7 +32,7 @@ export class FrameResources {
   }
 
   onResize (device: Device, d: Dimensions) {
-    const {gl, textureBindingState} = device;
+    const {gl} = device;
 
     this.destroy(gl);
   }

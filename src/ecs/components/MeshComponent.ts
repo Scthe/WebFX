@@ -1,4 +1,4 @@
-import {Component, ComponentType} from './_Component';
+import {Component, ComponentType} from '../Component';
 import {Vao, Buffer} from 'resources';
 
 export interface IndexBuffer {

@@ -5,17 +5,17 @@ import {createWebGl2Context, Dimensions, getMVP} from 'gl-utils';
 
 import {Config} from 'Config';
 import {Device} from 'Device';
-import {FpsController, CameraComponent} from 'components';
+import {
+  Ecs,
+  FpsController, CameraComponent
+} from 'ecs';
 
 import {ResizeSystem} from 'ResizeSystem';
 import {InputSystem} from 'InputSystem';
 import {TimingSystem} from 'TimingSystem';
 import {StatsSystem} from 'StatsSystem';
 import {UISystem} from 'UISystem';
-import {
-  WebFx, initalizeWebFx,
-  FrameResources,
-} from 'webfx';
+import {initializeScene, FrameResources} from 'webfx';
 import {
   PassExecuteParams,
   ShadowPass,
@@ -27,7 +27,7 @@ interface GlobalVariables {
   gl: Webgl;
   config: Config;
   canvas: HTMLCanvasElement;
-  webfx: WebFx;
+  ecs: Ecs;
   resizeSystem: ResizeSystem;
   device: Device;
   camera: {
@@ -65,9 +65,8 @@ const initialize = async (): Promise<GlobalVariables> => {
   globals.gl.clearDepth(cfg.clearDepth);
   globals.device = new Device(globals.gl);
 
-  // timers
+  globals.ecs = new Ecs();
   globals.timingSystem = new TimingSystem();
-
   globals.frameResources = new FrameResources();
   globals.frameResources.initialize(globals.config, globals.device);
 
@@ -89,12 +88,15 @@ const initialize = async (): Promise<GlobalVariables> => {
   globals.inputSystem = new InputSystem(globals.canvas, globals.camera.controller);
 
   //
-  globals.webfx = await initalizeWebFx(globals.gl, globals.device.textureBindingState);
+  await initializeScene(
+    globals.ecs, globals.config,
+    globals.gl, globals.device.textureBindingState
+  );
 
   // misc
   globals.statsSystem = new StatsSystem();
   globals.uISystem = new UISystem(cfg);
-  globals.uISystem.initialize(globals.webfx);
+  globals.uISystem.initialize(globals.ecs);
 
   //
   globals.resizeSystem.forceRecalc();
@@ -104,35 +106,12 @@ const initialize = async (): Promise<GlobalVariables> => {
 
 
 
-/*
-const createWebFxDrawParams = (globals: GlobalVariables) => {
-  const {controller, camera} = globals.camera;
-
-  return {
-    gl: globals.device.gl,
-    device: globals.device,
-    cfg: globals.config,
-    viewport: globals.device.surfaceSize,
-    camera: {
-      getMVP: (modelMatrix: mat4) => getMVP(
-        modelMatrix,
-        controller.viewMatrix,
-        camera.perspectiveMatrix
-      ),
-      position: controller.position,
-      // (modelMat: mat4) => modelMat,
-    }
-  };
-};
-*/
-
-
 const createRenderParams = (globals: GlobalVariables): PassExecuteParams => {
   const {controller, camera} = globals.camera;
   return {
     cfg: globals.config,
     device: globals.device,
-    webFx: globals.webfx,
+    ecs: globals.ecs,
     frameRes: globals.frameResources,
     viewport: globals.device.surfaceSize,
     camera: {
@@ -142,7 +121,6 @@ const createRenderParams = (globals: GlobalVariables): PassExecuteParams => {
         camera.perspectiveMatrix
       ),
       position: controller.position,
-      // (modelMat: mat4) => modelMat,
     }
   };
 };

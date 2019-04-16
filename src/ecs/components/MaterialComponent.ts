@@ -1,5 +1,4 @@
-import {fromValues as Vec3} from 'gl-vec3';
-import {Component, ComponentType} from './_Component';
+import {Component, ComponentType} from '../Component';
 import {Texture} from 'resources';
 
 export class MaterialComponent extends Component<ComponentType.Material> {
@@ -10,7 +9,7 @@ export class MaterialComponent extends Component<ComponentType.Material> {
 
   public fresnelExponent = 11.8;
   public fresnelMultiplier = 17.5;
-  public fresnelColor = [145, 27, 56];
+  public fresnelColor = [145, 27, 56]; // TODO no, use vec3 here!
   public ssColor1 = [37, 135, 45];
   public ssColor2 = [175, 70, 40];
 

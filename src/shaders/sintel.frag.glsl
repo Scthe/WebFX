@@ -42,12 +42,11 @@ in vec4 v_PositionLightShadowSpace;
 layout(location = 0) out vec4 outColor1;
 
 
+@import ./_utils;
 @import ./_material;
 @import ./_skin;
 // @i mport ./_pbr;
-@import ./_utils;
 @import ./_shadows;
-
 
 
 Material createMaterial() {
@@ -80,7 +79,6 @@ SkinParams createSkinParams() {
 }
 
 
-
 vec3 doShading(Material material, Light lights[3]) {
   vec3 result = u_lightAmbient.rgb * u_lightAmbient.a;
 
@@ -109,21 +107,12 @@ void main() {
   lights[2] = unpackLight(u_light2_Position, u_light2_Color);
 
   vec3 color;
-  // float dd = dot(normalize(v_Normal), normalize(LIGHT_POS));
-  // float phong = max(0.0, dd);
-  // vec3 direct_light = vec3(phong) * LIGHT_FALLOFF;
-  // color = AMBIENT + direct_light;
-
-  // color = albedo;
-
   Material material = createMaterial();
   SkinParams skinParams = createSkinParams();
   material.skin = skinShader(material, skinParams);
   color = doShading(material, lights);
 
-
   // color = tonemapReinhard(color);
   // outColor1 = vec4(gammaFix(color, u_gamma), 1.0);
   outColor1 = vec4(color, 1.0);
-  // outColor1 = vec4(vec3(shadow), 1.0);
 }

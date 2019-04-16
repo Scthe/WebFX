@@ -1,6 +1,6 @@
 import {mat4, create as Mat4, perspective} from 'gl-mat4';
 import {toRadians} from 'gl-utils';
-import {Component, ComponentType} from './_Component';
+import {Component, ComponentType} from '../Component';
 
 interface CameraSettings {
   fovDgr: number;

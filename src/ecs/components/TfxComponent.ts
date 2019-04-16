@@ -1,5 +1,5 @@
-import {Component, ComponentType} from './_Component';
-import {Texture, Vao} from 'resources';
+import {Component, ComponentType} from '../Component';
+import {Texture} from 'resources';
 import {IndexBuffer} from './MeshComponent';
 
 export class TfxComponent extends Component<ComponentType.Tfx> {

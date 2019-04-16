@@ -5,7 +5,7 @@ import {fromValues as Vec2} from 'gl-vec2';
 import {Dimensions, setUniforms} from 'gl-utils';
 import {DrawParams, applyDrawParams, DepthTest} from 'gl-utils/DrawParams';
 import {TextureBindingState, Shader} from 'resources';
-import {MeshComponent, TfxComponent} from 'components';
+import {MeshComponent, TfxComponent} from 'ecs';
 
 
 interface TfxRenderParams {

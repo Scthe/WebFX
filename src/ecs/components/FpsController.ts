@@ -11,8 +11,8 @@ import {vec3, fromValues as Vec3, add as addV3} from 'gl-vec3';
 import {create as Vec4} from 'gl-vec4';
 import {transformPointByMat4, clamp} from 'gl-utils';
 
-import {Component, ComponentType} from './_Component';
-import {KeyboardState} from '../InputSystem';
+import {Component, ComponentType} from '../Component';
+import {KeyboardState} from '../../InputSystem';
 
 
 const Key = {

@@ -1,19 +1,20 @@
-import {fromValues as Vec3} from 'gl-vec3';
+import {fromValues as Vec3, set} from 'gl-vec3';
 import {vec2, fromValues as Vec2} from 'gl-vec2';
 
 import {Mesh} from 'webgl-obj-loader';
-import {WebFx} from './WebFx';
-import {MeshComponent, MaterialComponent} from 'components';
+import {MeshComponent, MaterialComponent, TransformComponent} from '../ecs';
 import {
   Vao, VaoAttrType,
   Buffer, BufferType, BufferUsage,
-  Shader,
   Texture, TextureBindingState, TextureType, createTextureOpts,
   TextureFilterMin, TextureFilterMag
 } from 'resources';
 import {loadTexture} from 'gl-utils';
 import {loadTfxFile} from './tfxParser';
 import {prepareTfxData} from './tfxLoader';
+import {Ecs} from 'ecs/Ecs';
+import {NameComponent} from 'ecs/components/NameComponent';
+import { Config } from 'Config';
 
 
 const OBJ_FILES = {
@@ -25,6 +26,11 @@ const TEXTURE_FILES = {
   'sintel_eyeballs': require('../../assets/sintel_lite_v2_1/textures/sintel_eyeball_diff.jpg'),
 };
 const TFX_FILE = require('../../assets/sintel_lite_v2_1/GEO-sintel_hair_emit.002-sintel_hair.tfx');
+
+
+export const ENTITY_SINTEL = 'sintel';
+export const ENTITY_SINTEL_EYES = 'sintel_eyes';
+export const ENTITY_TRESSFX = 'sintel_tfx';
 
 
 
@@ -96,44 +102,54 @@ const createAlbedoTex = (gl: Webgl, tbs: TextureBindingState, size: vec2) => {
   );
 };
 
-const loadSintel = async (gl: Webgl, tbs: TextureBindingState) => {
+const loadSintel = async (ecs: Ecs, gl: Webgl, tbs: TextureBindingState) => {
   const sintelTex = createAlbedoTex(gl, tbs, Vec2(2048, 1024));
   await loadTexture(gl, tbs, TEXTURE_FILES.sintel, sintelTex);
-  const sintelObj = {
-    mesh: shoveMeshIntoGpu(gl, await loadMesh(OBJ_FILES.sintel)),
-    material: new MaterialComponent(sintelTex),
-  };
 
+  const entity = ecs.createEnity();
+  ecs.addComponent(entity, new MaterialComponent(sintelTex));
+  ecs.addComponent(entity, shoveMeshIntoGpu(gl, await loadMesh(OBJ_FILES.sintel)));
+  ecs.addComponent(entity, new NameComponent(ENTITY_SINTEL));
+  return entity;
+};
+
+const loadSintelEyes = async (ecs: Ecs, gl: Webgl, tbs: TextureBindingState) => {
   const sintelEyeTex = createAlbedoTex(gl, tbs, Vec2(512, 512));
   await loadTexture(gl, tbs, TEXTURE_FILES.sintel_eyeballs, sintelEyeTex);
-  const sintelEyesObj = {
-    mesh: shoveMeshIntoGpu(gl, await loadMesh(OBJ_FILES.sintel_eyeballs)),
-    material: new MaterialComponent(sintelEyeTex),
-  };
 
-  return [sintelObj, sintelEyesObj];
+  const entity = ecs.createEnity();
+  ecs.addComponent(entity, new MaterialComponent(sintelEyeTex));
+  ecs.addComponent(entity, shoveMeshIntoGpu(gl, await loadMesh(OBJ_FILES.sintel_eyeballs)));
+  ecs.addComponent(entity, new NameComponent(ENTITY_SINTEL_EYES));
+  return entity;
 };
 // </editor-fold> // END: MESH
 
 
-export const initalizeWebFx = async (
-  gl: Webgl, tbs: TextureBindingState
-): Promise<WebFx> => {
-  const meshes = await loadSintel(gl, tbs);
-  const meshShader = new Shader(gl,
-    require('shaders/sintel.vert.glsl'),
-    require('shaders/sintel.frag.glsl'),
-  );
-
+const loadTfxHair = async (ecs: Ecs, gl: Webgl, tbs: TextureBindingState) => {
   const tfxFile = await loadTfxFile(TFX_FILE);
-  const tfxComp = prepareTfxData(gl, tbs, tfxFile);
-  const tfxShader = new Shader(gl,
-    require('shaders/tfx.vert.glsl'),
-    require('shaders/tfx.frag.glsl'),
-  );
+  const tfxComponent = prepareTfxData(gl, tbs, tfxFile);
 
-  return new WebFx(
-    meshes, meshShader,
-    tfxComp, tfxShader,
-  );
+  const entity = ecs.createEnity();
+  ecs.addComponent(entity, tfxComponent);
+  ecs.addComponent(entity, new NameComponent(ENTITY_TRESSFX));
+  return entity;
+};
+
+
+export const initializeScene = async (
+  ecs: Ecs, cfg: Config, gl: Webgl, tbs: TextureBindingState
+) => {
+
+  const sintelE = await loadSintel(ecs, gl, tbs);
+  const sintelEyesE = await loadSintelEyes(ecs, gl, tbs);
+  const tfxE = await loadTfxHair(ecs, gl, tbs);
+
+  const tfxComp = new TransformComponent();
+  const s = cfg.sintel.modelScale;
+  set(tfxComp.scale, s, s, s);
+  tfxComp.updateModelMatrix();
+  ecs.addComponent(sintelE, tfxComp);
+  ecs.addComponent(sintelEyesE, tfxComp);
+  ecs.addComponent(tfxE, tfxComp);
 };

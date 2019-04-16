@@ -1,11 +1,12 @@
-import {mat4, create as Mat4, scale as scaleM4} from 'gl-mat4';
-import {fromValues as Vec3, scale as scaleV3} from 'gl-vec3';
+import {mat4} from 'gl-mat4';
+import {scale as scaleV3} from 'gl-vec3';
 import {setUniforms, arrayToVec3, sphericalToCartesian} from 'gl-utils';
 import {DrawParams, DepthTest, CullingMode} from 'gl-utils/DrawParams';
 
-import {Config, LightCfg} from 'Config';
+import {LightCfg} from 'Config';
 import {Texture} from 'resources';
 import {PassExecuteParams} from './structs';
+import {MaterialComponent, TransformComponent, MeshComponent} from 'ecs';
 
 
 interface ForwardPassData {
@@ -17,7 +18,7 @@ interface ForwardPassData {
 export class ForwardPass {
 
   execute (params: PassExecuteParams, passData: ForwardPassData) {
-    const {cfg, device, frameRes, viewport, camera, webFx} = params;
+    const {cfg, device, frameRes, viewport, camera, ecs} = params;
     const {gl} = device;
 
     device.setBackbufferAsRenderTarget();
@@ -34,10 +35,14 @@ export class ForwardPass {
     gl.viewport(0.0, 0.0, viewport.width, viewport.height);
     gl.clear(gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT);
 
-    const modelMatrix = this.getModelMatrix(cfg);
     const shadowCasterPos = cfg.getLightShadowPosition();
 
-    webFx.objects.forEach(obj => {
+    ecs.forEachEntity((_entityId, material, tfx, mesh) => {
+      const modelMatrix = tfx.modelMatrix;
+      // console.log({
+        // _entityId, material, tfx, mesh
+      // });
+
       setUniforms(device, shader, {
         'u_M': modelMatrix,
         'u_MVP': camera.getMVP(modelMatrix),
@@ -53,14 +58,14 @@ export class ForwardPass {
           shadowCasterPos[2],
           cfg.shadows.bias * (cfg.shadows.usePCSS ? -1 : 1),
         ]),
-        u_directionalShadowSampleRadius: Math.floor(cfg.shadows.blurRadius),
+        'u_directionalShadowSampleRadius': Math.floor(cfg.shadows.blurRadius),
         // skin:
-        'u_albedoTexture': obj.material.albedoTex,
-        'u_fresnelExponent': obj.material.fresnelExponent,
-        'u_fresnelMultiplier': obj.material.fresnelMultiplier,
-        'u_fresnelColor': arrayToVec3(obj.material.fresnelColor, true),
-        'u_ssColor1': arrayToVec3(obj.material.ssColor1, true),
-        'u_ssColor2': arrayToVec3(obj.material.ssColor2, true),
+        'u_albedoTexture': material.albedoTex,
+        'u_fresnelExponent': material.fresnelExponent,
+        'u_fresnelMultiplier': material.fresnelMultiplier,
+        'u_fresnelColor': arrayToVec3(material.fresnelColor, true),
+        'u_ssColor1': arrayToVec3(material.ssColor1, true),
+        'u_ssColor2': arrayToVec3(material.ssColor2, true),
         // lights:
         u_lightAmbient: Float32Array.from([
           cfg.lightAmbient.color[0],
@@ -73,8 +78,8 @@ export class ForwardPass {
         ...this.lightUniforms('light2', cfg.light2),
       }, false);
 
-      device.renderMesh(obj.mesh);
-    });
+      device.renderMesh(mesh);
+    }, MaterialComponent, TransformComponent, MeshComponent);
   }
 
   private lightUniforms (prefix: string, lightCfg: LightCfg) {
@@ -90,11 +95,6 @@ export class ForwardPass {
         lightCfg.energy,
       ]),
     };
-  }
-
-  private getModelMatrix(cfg: Config) {
-    const s = cfg.sintelScale;
-    return scaleM4(Mat4(), Mat4(), Vec3(s, s, s));
   }
 
 }

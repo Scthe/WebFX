@@ -1,7 +1,7 @@
 import {GUI} from 'dat.gui';
 import {Config, LightCfg} from 'Config';
-import {MaterialComponent} from 'components';
-import {WebFx, MaterialModel} from 'webfx';
+import {MaterialComponent, Ecs} from 'ecs';
+import {ENTITY_SINTEL, ENTITY_SINTEL_EYES} from 'webfx';
 
 interface UiOpts<T> {
   label: string;
@@ -40,10 +40,11 @@ export class UISystem {
     private readonly cfg: Config,
   ) { }
 
-  initialize (webfx: WebFx) {
+  initialize (ecs: Ecs) {
     this.gui = new GUI();
 
-    this.addSintelFolder(this.gui, webfx.getMaterial(MaterialModel.Sintel));
+    this.addMaterialFolder(this.gui, ecs, 'Sintel', ENTITY_SINTEL);
+    this.addMaterialFolder(this.gui, ecs, 'Sintel_eyes', ENTITY_SINTEL_EYES);
     this.addAmbientLightFolder(this.gui);
     this.addLightFolder(this.gui, this.cfg.light0, 'Light 0');
     this.addLightFolder(this.gui, this.cfg.light1, 'Light 1');
@@ -51,8 +52,12 @@ export class UISystem {
     this.addShadowsFolder(this.gui);
   }
 
-  private addSintelFolder (gui: GUI, mat: MaterialComponent) {
-    const dir = gui.addFolder('Sintel');
+  private addMaterialFolder (gui: GUI, ecs: Ecs, folderName: string, entityName: string) {
+    const entity = ecs.getByName(entityName);
+    if (entity === undefined) { throw `Did not found entity '${entityName}'`; }
+    const mat = ecs.getComponent(entity, MaterialComponent);
+
+    const dir = gui.addFolder(folderName);
     // dir.open();
 
     dir.add(mat, 'fresnelExponent', 0.0, 20.0).name('Fresnel exp');

@@ -4,6 +4,8 @@ export enum ComponentType {
   Material,
   Mesh,
   Tfx,
+  Name,
+  Transform,
 }
 
 

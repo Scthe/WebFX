@@ -19,8 +19,6 @@ export class Config {
   public readonly clearDepth: number = 1.0;
   public readonly resizeUpdateFreq: number = 1000; // ms
 
-  public readonly sintelScale = 0.1;
-
   // public readonly gamma = 2.2;
 
 
@@ -83,7 +81,7 @@ export class Config {
     posTheta: 82, // verical [dgr]
     posRadius: 10,
     color: arrayToVec3([214, 166, 166], true), // hexToVec3('#a0a0a0'),
-    energy: 0.63,
+    energy: 0.80,
   };
   public readonly light2 = {
     posPhi: -105, // horizontal [dgr]
@@ -102,6 +100,7 @@ export class Config {
     fresnelColor: Vec3(0.57, 0.105, 0.218),
     ssColor1: Vec3(0.146, 0.53, 0.178),
     ssColor2: Vec3(0.685, 0.273, 0.158),
+    modelScale: 0.1,
   };
   // </editor-fold> // END: SINTEL
 
