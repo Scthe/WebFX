@@ -1,3 +1,6 @@
+// https://github.com/Scthe/TressFX-OpenGL/blob/master/src/shaders/gl-tfx/lib/TressFXStrands.glsl
+
+
 #define TRESSFX_FLOAT_EPSILON 1e-7
 
 
@@ -5,10 +8,6 @@ ivec2 getVertexPositionCoords(uint offset) {
   uvec2 texSize = uvec2(textureSize(u_vertexPositionsBuffer, 0));
   return ivec2(offset % texSize.x, offset / texSize.x);
 }
-
-// vec4  GetPosition (uint index) { return g_GuideHairVertexPositions_[index]; }
-// vec4  GetTangent  (uint index) { return g_GuideHairVertexTangents_[index]; }
-// float GetThickness(uint index) { return g_HairThicknessCoeffs_[index]; }
 
 vec2 safeNormalize(vec2 vec) {
   float len = length(vec);
@@ -28,7 +27,7 @@ float getVertexInStrandPercentage (uint index) {
 
 struct TressFXVertex {
   vec4 position;
-  // vec4 tangent;
+  vec4 tangent;
   // vec4 p0p1;
   // vec4 strandColor;
 };
@@ -42,14 +41,13 @@ TressFXVertex getExpandedTressFXVert(uint vertexId, vec3 eye, mat4 viewProj) {
   uint index = vertexId / 2u;  // vertexId is actually the indexed vertex id when indexed triangles are used
 
   // Get updated positions and tangents from simulation result
-  ivec2 positionSampleCoord = getVertexPositionCoords(index);
-  vec3 v = texelFetch(u_vertexPositionsBuffer, positionSampleCoord, 0).xyz;
-  // vec3 t = GetTangent(index).xyz;
-  vec3 t = vec3(0.0, 1.0, 0.0); // TODO
+  ivec2 vertexSamplePos = getVertexPositionCoords(index);
+  vec3 v = texelFetch(u_vertexPositionsBuffer, vertexSamplePos, 0).xyz;
+  vec3 t = texelFetch(u_vertexTangentsBuffer, vertexSamplePos, 0).xyz;
 
   // Get hair strand thickness
   float vertex_position = getVertexInStrandPercentage(index);
-  float ratio = 1.0; // float ratio = mix(g_Ratio, 1.0, g_bThinTip > 0 ? vertex_position : 1.0);
+  float ratio = mix(u_thinTip, 1.0, vertex_position);
 
   // Calculate right and projected right vectors
   vec3 towardsCamera = safeNormalize(v - eye);
@@ -76,13 +74,7 @@ TressFXVertex getExpandedTressFXVert(uint vertexId, vec3 eye, mat4 viewProj) {
     float w = isOdd ? hairEdgePositions[0].w : hairEdgePositions[1].w;
     result.position += fDirIndex * tmp * w;
   }
-  // result.tangent = vec4(t, ratio); // pack tangent + ThinTipRatio
-  // result.p0p1 = vec4(
-    // hairEdgePositions[0].xy / max(hairEdgePositions[0].w, TRESSFX_FLOAT_EPSILON),
-    // hairEdgePositions[1].xy / max(hairEdgePositions[1].w, TRESSFX_FLOAT_EPSILON)
-  // );
-  // result.strandColor = GetStrandColor(index, vertex_position);
-  // result.PosCheck = MatrixMult(g_mView, vec4(v,1));
+  result.tangent = vec4(t, ratio); // pack tangent + ThinTipRatio
 
   return result;
 }

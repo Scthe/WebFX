@@ -1,7 +1,18 @@
-import {Dimensions} from 'gl-utils';
+import {mat4} from 'gl-mat4';
+import {vec3} from 'gl-vec3';
+import {fromValues as Vec2} from 'gl-vec2';
+
+import {Dimensions, setUniforms} from 'gl-utils';
 import {DrawParams, applyDrawParams, DepthTest} from 'gl-utils/DrawParams';
-import {TextureBindingState} from 'resources';
-import {MeshComponent} from 'components';
+import {TextureBindingState, Shader} from 'resources';
+import {MeshComponent, TfxComponent} from 'components';
+
+
+interface TfxRenderParams {
+  mvp: mat4;
+  cameraPosition: vec3;
+  viewport: Dimensions;
+}
 
 
 export class Device {
@@ -44,6 +55,27 @@ export class Device {
     } = mesh;
 
     vao.bind(gl);
+    indexBuffer.bind(gl);
+    gl.drawElements(gl.TRIANGLES, triangleCnt * 3, indexGlType, 0);
+  }
+
+  renderTressFx = (tfx: TfxComponent, shader: Shader, params: TfxRenderParams) => {
+    const gl = this.gl;
+
+    setUniforms(this, shader, {
+      'u_MVP': params.mvp,
+      'u_cameraPosition': params.cameraPosition,
+      'u_viewportSize': Vec2(params.viewport.width, params.viewport.height),
+      'u_numVerticesPerStrand': tfx.numVerticesPerStrand,
+      'u_vertexPositionsBuffer': tfx.positionsTexture,
+      'u_fiberRadius': 0.2,
+      'u_thinTip': 0.5,
+    }, false);
+
+    // const totalVertices = this.tfxComponent.totalVertices;
+    // gl.drawArrays(gl.TRIANGLES, 0, totalVertices);
+
+    const {indexGlType, indexBuffer, triangleCnt} = tfx.indices;
     indexBuffer.bind(gl);
     gl.drawElements(gl.TRIANGLES, triangleCnt * 3, indexGlType, 0);
   }

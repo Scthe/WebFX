@@ -7,8 +7,8 @@ export class TfxComponent extends Component<ComponentType.Tfx> {
     public readonly numHairStrands: number,
     public readonly numVerticesPerStrand: number,
     public readonly positionsTexture: Texture,
+    public readonly tangentsTexture: Texture,
     public readonly indices: IndexBuffer,
-    public readonly _vao: Vao,
   ) {
     super();
   }

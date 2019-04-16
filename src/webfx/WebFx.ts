@@ -1,8 +1,9 @@
 import {mat4, create as Mat4, scale} from 'gl-mat4';
 import {vec3, fromValues as Vec3} from 'gl-vec3';
 import {fromValues as Vec2} from 'gl-vec2';
+import get from 'lodash-es/get';
 
-import {Dimensions, setUniforms} from 'gl-utils';
+import {Dimensions, setUniforms, arrayToVec3} from 'gl-utils';
 import {DrawParams, DepthTest, CullingMode} from 'gl-utils/DrawParams';
 import {Shader} from 'resources';
 import {Config} from 'Config';
@@ -10,7 +11,9 @@ import {Device} from 'Device';
 import {MeshComponent, MaterialComponent, TfxComponent} from 'components';
 
 
-export interface FrameCamera {
+export enum MaterialModel { Sintel = 0, SintelEyes = 1 }
+
+interface FrameCamera {
   position: vec3;
   // viewMatrix: mat4;
   // projectionMatrix: mat4;
@@ -34,7 +37,7 @@ interface Object3d {
 
 export class WebFx {
   constructor(
-    private readonly objects: Object3d[],
+    public readonly objects: Object3d[],
     private readonly meshShader: Shader,
     private readonly tfxComponent: TfxComponent,
     private readonly tfxShader: Shader,
@@ -62,8 +65,16 @@ export class WebFx {
       setUniforms(device, this.meshShader, {
         'u_M': modelMatrix,
         'u_MVP': camera.getMVP(modelMatrix),
+        'u_cameraPosition': camera.position,
+        'u_gamma': 2.2,
+        // skin:
         'u_albedoTexture': obj.material.albedoTex,
-      }, true);
+        'u_fresnelExponent': obj.material.fresnelExponent,
+        'u_fresnelMultiplier': obj.material.fresnelMultiplier,
+        'u_fresnelColor': arrayToVec3(obj.material.fresnelColor, true),
+        'u_ssColor1': arrayToVec3(obj.material.ssColor1, true),
+        'u_ssColor2': arrayToVec3(obj.material.ssColor2, true),
+      }, false);
 
       device.renderMesh(obj.mesh);
     });
@@ -81,27 +92,20 @@ export class WebFx {
 
     const modelMatrix = this.getModelMatrix(cfg);
 
-    setUniforms(device, this.tfxShader, {
-      'u_MVP': camera.getMVP(modelMatrix),
-      'u_cameraPosition': camera.position,
-      'u_numVerticesPerStrand': this.tfxComponent.numVerticesPerStrand,
-      'u_viewportSize': Vec2(viewport.width, viewport.height),
-      'u_fiberRadius': 0.2,
-      'u_vertexPositionsBuffer': this.tfxComponent.positionsTexture,
-    }, false);
-
-    // const totalVertices = this.tfxComponent.totalVertices;
-    // gl.drawArrays(gl.TRIANGLES, 0, totalVertices);
-
-    this.tfxComponent._vao.bind(gl);
-    const {indexGlType, indexBuffer, triangleCnt} = this.tfxComponent.indices;
-    indexBuffer.bind(gl);
-    gl.drawElements(gl.TRIANGLES, triangleCnt * 3, indexGlType, 0);
+    device.renderTressFx(this.tfxComponent, this.tfxShader, {
+      mvp: camera.getMVP(modelMatrix),
+      cameraPosition: camera.position,
+      viewport,
+    });
   }
 
   private getModelMatrix(cfg: Config) {
     const s = cfg.sintelScale;
     return scale(Mat4(), Mat4(), Vec3(s, s, s));
+  }
+
+  public getMaterial (mat: MaterialModel) {
+    return get(this.objects[mat], 'material');
   }
 
 }

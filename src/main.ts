@@ -6,13 +6,21 @@ import {createWebGl2Context, Dimensions, getMVP} from 'gl-utils';
 import {Config} from 'Config';
 import {Device} from 'Device';
 import {FpsController, CameraComponent} from 'components';
-import {WebFx, initalizeWebFx} from 'webfx';
 
 import {ResizeSystem} from 'ResizeSystem';
 import {InputSystem} from 'InputSystem';
 import {TimingSystem} from 'TimingSystem';
 import {StatsSystem} from 'StatsSystem';
 import {UISystem} from 'UISystem';
+import {
+  WebFx, initalizeWebFx,
+  FrameResources,
+} from 'webfx';
+import {
+  PassExecuteParams,
+  ShadowPass,
+  ForwardPass,
+} from 'webfx/passes';
 
 
 interface GlobalVariables {
@@ -30,6 +38,7 @@ interface GlobalVariables {
   timingSystem: TimingSystem;
   statsSystem: StatsSystem;
   uISystem: UISystem;
+  frameResources: FrameResources;
 }
 
 
@@ -59,10 +68,14 @@ const initialize = async (): Promise<GlobalVariables> => {
   // timers
   globals.timingSystem = new TimingSystem();
 
+  globals.frameResources = new FrameResources();
+  globals.frameResources.initialize(globals.config, globals.device);
+
   // screen/window resize handle
   globals.resizeSystem = new ResizeSystem(globals.gl, cfg.resizeUpdateFreq);
   globals.resizeSystem.addHandler((d: Dimensions) => {
     globals.camera.camera.updateProjectionMatrix(d.width, d.height);
+    globals.frameResources.onResize(globals.device, d);
     globals.device.surfaceSize = d;
   });
 
@@ -75,13 +88,13 @@ const initialize = async (): Promise<GlobalVariables> => {
   copyV2(globals.camera.controller.angles, cfg.camera.rotation);
   globals.inputSystem = new InputSystem(globals.canvas, globals.camera.controller);
 
+  //
+  globals.webfx = await initalizeWebFx(globals.gl, globals.device.textureBindingState);
+
   // misc
   globals.statsSystem = new StatsSystem();
   globals.uISystem = new UISystem(cfg);
-  globals.uISystem.initialize();
-
-  //
-  globals.webfx = await initalizeWebFx(globals.gl, globals.device.textureBindingState);
+  globals.uISystem.initialize(globals.webfx);
 
   //
   globals.resizeSystem.forceRecalc();
@@ -91,6 +104,7 @@ const initialize = async (): Promise<GlobalVariables> => {
 
 
 
+/*
 const createWebFxDrawParams = (globals: GlobalVariables) => {
   const {controller, camera} = globals.camera;
 
@@ -110,6 +124,46 @@ const createWebFxDrawParams = (globals: GlobalVariables) => {
     }
   };
 };
+*/
+
+
+const createRenderParams = (globals: GlobalVariables): PassExecuteParams => {
+  const {controller, camera} = globals.camera;
+  return {
+    cfg: globals.config,
+    device: globals.device,
+    webFx: globals.webfx,
+    frameRes: globals.frameResources,
+    viewport: globals.device.surfaceSize,
+    camera: {
+      getMVP: (modelMatrix: mat4) => getMVP(
+        modelMatrix,
+        controller.viewMatrix,
+        camera.perspectiveMatrix
+      ),
+      position: controller.position,
+      // (modelMat: mat4) => modelMat,
+    }
+  };
+};
+
+const renderScene = (globals: GlobalVariables) => {
+  const params = createRenderParams(globals);
+
+  const shadowPass = new ShadowPass();
+  shadowPass.execute(params);
+
+  const forwardPass = new ForwardPass();
+  forwardPass.execute(params, {
+    getLightShadowMvp: (modelMat: mat4) => shadowPass.getLightShadowMvp(globals.config, modelMat),
+    shadowDepthTexture: globals.frameResources.shadowDepthTex,
+  });
+
+  // const drawParams = createWebFxDrawParams(globals);
+  // globals.webfx.beginScene(drawParams);
+  // globals.webfx.renderMeshes(drawParams);
+  // globals.webfx.renderHair(drawParams);
+};
 
 
 const runMain = (globals: GlobalVariables) => (timeMs: number = 0) => {
@@ -120,14 +174,10 @@ const runMain = (globals: GlobalVariables) => (timeMs: number = 0) => {
 
   globals.inputSystem.update(frameTimings.deltaTimeMs);
 
-  const drawParams = createWebFxDrawParams(globals);
-  globals.webfx.beginScene(drawParams);
-  globals.webfx.renderMeshes(drawParams);
-  globals.webfx.renderHair(drawParams);
+  renderScene(globals);
 
   // TODO move this at the beginning of the frame,
   // but this would always schedule, so can't crash nicely
-  // throw `--- throwing after 1st frame ---`;
   requestAnimationFrame(runMain(globals));
 
   globals.statsSystem.frameEnd();

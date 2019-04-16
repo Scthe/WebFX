@@ -6,7 +6,7 @@ export * from './uniforms';
 
 import {
   vec3, fromValues as Vec3, create as vec3_0,
-  normalize, subtract
+  normalize, subtract, add
 } from 'gl-vec3';
 import STATIC_GL from './gimme_gl';
 import {TextureBindingState, Texture} from 'resources';
@@ -81,6 +81,11 @@ export const subtractNorm = (a: vec3, b: vec3) => {
   return normalize(c, c);
 };
 
+export const addNorm = (a: vec3, b: vec3) => {
+  const c = add(vec3_0(), a, b);
+  return normalize(c, c);
+};
+
 export const vec3ToString = (v: vec3, precision: number = 3) => {
   const pv = (idx: number) => numberToString(v[idx], precision);
   return `[${pv(0)}, ${pv(1)}, ${pv(2)}]`;
@@ -137,4 +142,14 @@ export const getSizeOfBufferAsTexture = (gl: Webgl, bufElements: number) => {
     width: Math.min(maxTexDim, bufElements),
     height: Math.ceil(bufElements / maxTexDim), // 'ceil' is important!
   };
+};
+
+export const arrayToVec3 = (arr: number[], divBy255 = false) => {
+  if (!arr || arr.length !== 3) {
+    throw `arrayToVec3 expects array of 3 values, got ${arr ? arr.length : 'null'}`;
+  }
+  if (divBy255) {
+    arr = arr.map(x => x / 255);
+  }
+  return Vec3(arr[0], arr[1], arr[2]);
 };

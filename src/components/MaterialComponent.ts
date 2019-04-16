@@ -1,11 +1,18 @@
+import {fromValues as Vec3} from 'gl-vec3';
 import {Component, ComponentType} from './_Component';
-import { Texture } from 'resources';
+import {Texture} from 'resources';
 
 export class MaterialComponent extends Component<ComponentType.Material> {
 
+  // ambientCol: [206, 230, 255],
   public isMetallic = false;
   public roughness = 0.7;
-  public shadowCaster = true;
+
+  public fresnelExponent = 11.8;
+  public fresnelMultiplier = 17.5;
+  public fresnelColor = [145, 27, 56];
+  public ssColor1 = [37, 135, 45];
+  public ssColor2 = [175, 70, 40];
 
   constructor(
     /* albedo for dielectrics, F0 for metalics*/

@@ -1,5 +1,7 @@
 import {GUI} from 'dat.gui';
-import {Config} from 'Config';
+import {Config, LightCfg} from 'Config';
+import {MaterialComponent} from 'components';
+import {WebFx, MaterialModel} from 'webfx';
 
 interface UiOpts<T> {
   label: string;
@@ -38,12 +40,86 @@ export class UISystem {
     private readonly cfg: Config,
   ) { }
 
-  initialize () {
+  initialize (webfx: WebFx) {
     this.gui = new GUI();
 
-    const f = this.gui.addFolder('tmp');
-    f.open();
-    f.add(this.cfg.camera.settings, 'fovDgr', 60, 120);
+    this.addSintelFolder(this.gui, webfx.getMaterial(MaterialModel.Sintel));
+    this.addAmbientLightFolder(this.gui);
+    this.addLightFolder(this.gui, this.cfg.light0, 'Light 0');
+    this.addLightFolder(this.gui, this.cfg.light1, 'Light 1');
+    this.addLightFolder(this.gui, this.cfg.light2, 'Light 2');
+    this.addShadowsFolder(this.gui);
+  }
+
+  private addSintelFolder (gui: GUI, mat: MaterialComponent) {
+    const dir = gui.addFolder('Sintel');
+    // dir.open();
+
+    dir.add(mat, 'fresnelExponent', 0.0, 20.0).name('Fresnel exp');
+    dir.add(mat, 'fresnelMultiplier', 0.0, 20.0).name('Fresnel mul');
+    dir.addColor(mat, 'fresnelColor').name('Fresnel color');
+    dir.addColor(mat, 'ssColor1').name('SSS color 1');
+    dir.addColor(mat, 'ssColor2').name('SSS color 2');
+  }
+
+  private addShadowsFolder (gui: GUI) {
+    const dir = gui.addFolder('Shadows');
+    dir.open();
+
+    const techniqueDummy = createDummy(this.cfg.shadows, 'usePCSS', [
+      { label: 'PCF', value: false, },
+      { label: 'PCSS', value: true, },
+    ]);
+    dir.add(techniqueDummy, 'usePCSS', techniqueDummy.values).name('Technique');
+    dir.add(this.cfg.shadows, 'strength', 0.0, 1.0).name('Strength');
+    dir.add(this.cfg.shadows, 'blurRadius', [0, 1, 2, 3, 4]).name('Blur radius');
+    dir.add(this.cfg.shadows, 'bias', 0.01, 0.1).name('Bias');
+
+    dir.add(this.cfg.shadows.directionalLight, 'posPhi', -179, 179).step(1).name('Position phi');
+    dir.add(this.cfg.shadows.directionalLight, 'posTheta', 15, 85).step(1).name('Position th');
+  }
+
+  private addAmbientLightFolder (gui: GUI) {
+    const dir = gui.addFolder('Ambient light');
+    dir.open();
+
+    this.addColorController(dir, this.cfg.lightAmbient, 'color', 'Color');
+    dir.add(this.cfg.lightAmbient, 'energy', 0.0, 1.0).name('Energy');
+  }
+
+  private addLightFolder (gui: GUI, lightObj: LightCfg, name: string) {
+    const dir = gui.addFolder(name);
+    // dir.open();
+
+    dir.add(lightObj, 'posPhi', -179, 179).step(1).name('Position phi');
+    dir.add(lightObj, 'posTheta', 15, 85).step(1).name('Position th');
+    dir.add(lightObj, 'posRadius', 0.0, 10.0).name('Position r');
+    this.addColorController(dir, lightObj, 'color', 'Color');
+    dir.add(lightObj, 'energy', 0.0, 1.0).name('Energy');
+  }
+
+  private addColorController<T extends object> (
+    gui: GUI, obj: T, prop: keyof T, name: string
+  ) {
+    const dummy = {
+      value: [] as number[],
+    };
+
+    Object.defineProperty(dummy, 'value', {
+      enumerable: true,
+      get: () => {
+        const v = obj[prop] as any;
+        return [v[0] * 255, v[1] * 255, v[2] * 255];
+      },
+      set: (v: number[]) => {
+        const a = obj[prop] as any as number[];
+        a[0] = v[0] / 255;
+        a[1] = v[1] / 255;
+        a[2] = v[2] / 255;
+      },
+    });
+
+    gui.addColor(dummy, 'value').name(name);
   }
 
 }
