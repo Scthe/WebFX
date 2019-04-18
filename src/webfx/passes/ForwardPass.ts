@@ -4,7 +4,7 @@ import {setUniforms, arrayToVec3, sphericalToCartesian} from 'gl-utils';
 import {DrawParams, DepthTest, CullingMode} from 'gl-utils/DrawParams';
 
 import {LightCfg} from 'Config';
-import {Texture} from 'resources';
+import {Texture, FboBindType} from 'resources';
 import {PassExecuteParams} from './structs';
 import {MaterialComponent, TransformComponent, MeshComponent} from 'ecs';
 
@@ -21,9 +21,6 @@ export class ForwardPass {
     const {cfg, device, frameRes, viewport, camera, ecs} = params;
     const {gl} = device;
 
-    device.setBackbufferAsRenderTarget();
-    // frameRes.shadowDepthFbo.bind(gl, FboBindType.Draw, true);
-
     const shader = frameRes.meshShader;
     shader.use(gl);
 
@@ -32,6 +29,7 @@ export class ForwardPass {
     dp.culling = CullingMode.None;
     device.setState(dp);
 
+    frameRes.forwardFbo.bind(gl, FboBindType.Draw, true);
     gl.viewport(0.0, 0.0, viewport.width, viewport.height);
     gl.clear(gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT);
 
@@ -39,9 +37,6 @@ export class ForwardPass {
 
     ecs.forEachEntity((_entityId, material, tfx, mesh) => {
       const modelMatrix = tfx.modelMatrix;
-      // console.log({
-        // _entityId, material, tfx, mesh
-      // });
 
       setUniforms(device, shader, {
         'u_M': modelMatrix,

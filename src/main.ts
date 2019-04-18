@@ -20,6 +20,8 @@ import {
   PassExecuteParams,
   ShadowPass,
   ForwardPass,
+  FinalPass,
+  TonemappingPass,
 } from 'webfx/passes';
 
 
@@ -61,7 +63,6 @@ const initialize = async (): Promise<GlobalVariables> => {
     'EXT_color_buffer_float',
     'OES_texture_float_linear',
   ]);
-  globals.gl.clearColor(cfg.clearColor[0], cfg.clearColor[1], cfg.clearColor[2], 1.0);
   globals.gl.clearDepth(cfg.clearDepth);
   globals.device = new Device(globals.gl);
 
@@ -128,6 +129,9 @@ const createRenderParams = (globals: GlobalVariables): PassExecuteParams => {
 const renderScene = (globals: GlobalVariables) => {
   const params = createRenderParams(globals);
 
+  const clearColor = globals.config.clearColor;
+  globals.gl.clearColor(clearColor[0], clearColor[1], clearColor[2], 1.0);
+
   const shadowPass = new ShadowPass();
   shadowPass.execute(params);
 
@@ -141,6 +145,13 @@ const renderScene = (globals: GlobalVariables) => {
   // globals.webfx.beginScene(drawParams);
   // globals.webfx.renderMeshes(drawParams);
   // globals.webfx.renderHair(drawParams);
+
+
+  const tonemappingPass = new TonemappingPass();
+  tonemappingPass.execute(params);
+
+  const finalPass = new FinalPass();
+  finalPass.execute(params);
 };
 
 

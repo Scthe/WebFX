@@ -1,7 +1,8 @@
 import {GUI} from 'dat.gui';
-import {Config, LightCfg} from 'Config';
+import {Config, LightCfg, ColorGradingProp, ColorGradingPerRangeSettings} from 'Config';
 import {MaterialComponent, Ecs} from 'ecs';
 import {ENTITY_SINTEL, ENTITY_SINTEL_EYES} from 'webfx';
+import {TonemappingModesList, TonemappingMode} from 'webfx/passes/TonemappingPass';
 
 interface UiOpts<T> {
   label: string;
@@ -32,6 +33,14 @@ const createDummy = <V extends Object, K extends keyof V>(
 };
 
 
+interface ColorGradingUIOpts {
+  tint?: boolean;
+  shadowMax?: boolean;
+  highlightsMin?: boolean;
+}
+
+
+
 export class UISystem {
 
   private gui: GUI;
@@ -42,6 +51,9 @@ export class UISystem {
 
   initialize (ecs: Ecs) {
     this.gui = new GUI();
+    const colorGrading = this.cfg.postfx.colorGrading;
+
+    this.addColorController(this.gui, this.cfg, 'clearColor', 'Bg color');
 
     this.addMaterialFolder(this.gui, ecs, 'Sintel', ENTITY_SINTEL);
     this.addMaterialFolder(this.gui, ecs, 'Sintel_eyes', ENTITY_SINTEL_EYES);
@@ -50,6 +62,12 @@ export class UISystem {
     this.addLightFolder(this.gui, this.cfg.light1, 'Light 1');
     this.addLightFolder(this.gui, this.cfg.light2, 'Light 2');
     this.addShadowsFolder(this.gui);
+    this.addPostFx(this.gui);
+    this.addColorGrading(this.gui, colorGrading.global, 'Color grading - general', {tint: true});
+    this.addColorGrading(this.gui, colorGrading.shadows, 'Color grading - shadows', {shadowMax: true});
+    this.addColorGrading(this.gui, colorGrading.midtones, 'Color grading - midtones', {});
+    this.addColorGrading(this.gui, colorGrading.highlights, 'Color grading - highlights', {highlightsMin: true});
+    this.addFxaa(this.gui);
   }
 
   private addMaterialFolder (gui: GUI, ecs: Ecs, folderName: string, entityName: string) {
@@ -69,8 +87,9 @@ export class UISystem {
 
   private addShadowsFolder (gui: GUI) {
     const dir = gui.addFolder('Shadows');
-    dir.open();
+    // dir.open();
 
+    dir.add(this.cfg.shadows, 'showDebugView').name('Show dbg');
     const techniqueDummy = createDummy(this.cfg.shadows, 'usePCSS', [
       { label: 'PCF', value: false, },
       { label: 'PCSS', value: true, },
@@ -82,14 +101,15 @@ export class UISystem {
 
     dir.add(this.cfg.shadows.directionalLight, 'posPhi', -179, 179).step(1).name('Position phi');
     dir.add(this.cfg.shadows.directionalLight, 'posTheta', 15, 85).step(1).name('Position th');
+    // dir.add(this.cfg.shadows.directionalLight, 'posRadius', 1, 10).step(0.1).name('Position r');
   }
 
   private addAmbientLightFolder (gui: GUI) {
     const dir = gui.addFolder('Ambient light');
-    dir.open();
+    // dir.open();
 
     this.addColorController(dir, this.cfg.lightAmbient, 'color', 'Color');
-    dir.add(this.cfg.lightAmbient, 'energy', 0.0, 1.0).name('Energy');
+    dir.add(this.cfg.lightAmbient, 'energy', 0.0, 0.2, 0.01).name('Energy');
   }
 
   private addLightFolder (gui: GUI, lightObj: LightCfg, name: string) {
@@ -100,8 +120,76 @@ export class UISystem {
     dir.add(lightObj, 'posTheta', 15, 85).step(1).name('Position th');
     dir.add(lightObj, 'posRadius', 0.0, 10.0).name('Position r');
     this.addColorController(dir, lightObj, 'color', 'Color');
-    dir.add(lightObj, 'energy', 0.0, 1.0).name('Energy');
+    dir.add(lightObj, 'energy', 0.0, 2.0).name('Energy');
   }
+
+  private addPostFx (gui: GUI) {
+    const dir = gui.addFolder('Post FX');
+    // dir.open();
+
+    // gamma
+    dir.add(this.cfg.postfx, 'gamma', 1.0, 3.0).name('Gamma');
+
+    // tonemapping
+    // just please, for the love of God and all that is holy use ACES
+    const tonemapDummy = createDummy(
+      this.cfg.postfx, 'tonemappingOp',
+      TonemappingModesList.map(k => ({
+        label: k, value: TonemappingMode[k]
+      }))
+    );
+    dir.add(tonemapDummy, 'tonemappingOp', tonemapDummy.values).name('Tonemap op');
+    dir.add(this.cfg.postfx, 'acesC', 0.5, 1.5).name('ACES C');
+    dir.add(this.cfg.postfx, 'acesS', 0.0, 2.0).name('ACES S');
+    dir.add(this.cfg.postfx, 'exposure', 0.5, 2.0).name('Exposure');
+    dir.add(this.cfg.postfx, 'whitePoint', 0.5, 2.0).name('White point');
+  }
+
+  private addFxaa(gui: GUI) {
+    const dir = gui.addFolder('FXAA');
+    // dir.open();
+
+    dir.add(this.cfg.postfx, 'useFxaa').name('Use FXAA');
+    dir.add(this.cfg.postfx, 'subpixel', 0.0, 1.0).name('Subpixel aa');
+    dir.add(this.cfg.postfx, 'edgeThreshold', 0.063, 0.333).name('Contrast Treshold');
+    dir.add(this.cfg.postfx, 'edgeThresholdMin', 0.0, 0.0833).name('Edge Treshold');
+  }
+
+  private addColorGrading(
+    gui: GUI, obj: ColorGradingPerRangeSettings, name: string, opts: ColorGradingUIOpts
+  ) {
+    const dir = gui.addFolder(name);
+    // dir.open();
+
+    this.addColorGradingProp(dir, obj.saturation, 'Saturation');
+    this.addColorGradingProp(dir, obj.contrast, 'Contrast');
+    this.addColorGradingProp(dir, obj.gamma, 'Gamma');
+    this.addColorGradingProp(dir, obj.gain, 'Gain');
+    this.addColorGradingProp(dir, obj.offset, 'Offset', -1, 1);
+
+    if (opts.tint) {
+      // this.addColorGradingProp(dir, (obj as any).tint, 'Tint');
+    }
+    if (opts.shadowMax) {
+      dir.add(obj, 'shadowsMax', 0.0, 1.0).name('shadowsMax');
+    }
+    if (opts.highlightsMin) {
+      dir.add(obj, 'highlightsMin', 0.0, 1.0).name('highlightsMin');
+    }
+  }
+
+  private addColorGradingProp(
+    dir: GUI, obj: ColorGradingProp, name: string,
+    vMin: number = 0, vMax: number = 2
+  ) {
+    this.addColorController(dir, obj, 'color', `${name} color`);
+    dir.add(obj, 'value', vMin, vMax, 0.01).name(name);
+  }
+
+
+  ////////
+  // Utils
+  ////////
 
   private addColorController<T extends object> (
     gui: GUI, obj: T, prop: keyof T, name: string
@@ -126,5 +214,4 @@ export class UISystem {
 
     gui.addColor(dummy, 'value').name(name);
   }
-
 }

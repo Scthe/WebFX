@@ -24,6 +24,16 @@ export class FrameResources {
   public shadowShader: Shader;
   // forward
   public meshShader: Shader;
+  public forwardDepthTex: Texture;
+  public forwardColorTex: Texture;
+  public forwardFbo: Fbo;
+  // tonemapping
+  public tonemappingShader: Shader;
+  public tonemappingResultTex: Texture; // [rgb, luma]
+  public tonemappingFbo: Fbo;
+  // final
+  public finalShader: Shader;
+  public dbgShadowsShader: Shader;
 
 
   public initialize (cfg: Config, device: Device) {
@@ -32,9 +42,10 @@ export class FrameResources {
   }
 
   onResize (device: Device, d: Dimensions) {
-    const {gl} = device;
+    this.destroyResizableResources(device.gl);
 
-    this.destroy(gl);
+    this.initializeForwardPassResources(device, d);
+    this.initializeTonemappingPassResources(device, d);
   }
 
   private initializeShaders (gl: Webgl) {
@@ -46,23 +57,80 @@ export class FrameResources {
       require('shaders/sintel.vert.glsl'),
       require('shaders/sintel.frag.glsl'),
     );
+    this.finalShader = new Shader(gl,
+      require('shaders/final.vert.glsl'),
+      require('shaders/final.frag.glsl'),
+    );
+    this.dbgShadowsShader = new Shader(gl,
+      require('shaders/final.vert.glsl'), // just reuse simple fullscreen quad vertex shader
+      require('shaders/final.dbgShadows.glsl'),
+    );
+    this.tonemappingShader = new Shader(gl,
+      require('shaders/final.vert.glsl'), // just reuse simple fullscreen quad vertex shader
+      require('shaders/tonemapping.frag.glsl'),
+    );
+  }
+
+  private initializeForwardPassResources (device: Device, d: Dimensions) {
+    const {gl} = device;
+
+    this.forwardDepthTex = this.createTexture(
+      device,
+      gl.DEPTH_COMPONENT16, d,
+      this.createTextureOpts(gl, gl.DEPTH_COMPONENT16)
+    );
+    this.forwardColorTex = this.createTexture(
+      device,
+      gl.RGBA32F, d,
+      this.createTextureOpts(gl, gl.RGBA32F)
+    );
+    this.forwardFbo = new Fbo(gl, [
+      this.forwardDepthTex,
+      this.forwardColorTex,
+    ]);
+  }
+
+  private initializeTonemappingPassResources (device: Device, d: Dimensions) {
+    const {gl} = device;
+
+    this.tonemappingResultTex = this.createTexture(
+      device,
+      gl.RGBA8, d,
+      this.createTextureOpts(gl, gl.RGBA8)
+    );
+    this.tonemappingFbo = new Fbo(gl, [
+      this.tonemappingResultTex,
+    ]);
   }
 
   private initializeShadowResources (cfg: Config, device: Device) {
-    const {gl, textureBindingState} = device;
+    const {gl} = device;
     const {shadows: shadowCfg} = cfg;
 
-    this.shadowDepthTex = new Texture(
-      gl, textureBindingState,
-      TextureType.Texture2d,
-      Vec3(shadowCfg.shadowmapSize, shadowCfg.shadowmapSize, 1),
-      0,
+    this.shadowDepthTex = this.createTexture(
+      device,
       gl.DEPTH_COMPONENT16,
+      {width: shadowCfg.shadowmapSize, height: shadowCfg.shadowmapSize},
       this.createTextureOpts(gl, gl.DEPTH_COMPONENT16)
     );
     this.shadowDepthFbo = new Fbo(gl, [
       this.shadowDepthTex
     ]);
+  }
+
+  private createTexture (
+    device: Device,
+    sizedFormat: number, d: Dimensions, opts: TextureOpts
+  ) {
+    const {gl, textureBindingState} = device;
+    return new Texture(
+      gl, textureBindingState,
+      TextureType.Texture2d,
+      Vec3(d.width, d.height, 1),
+      0,
+      sizedFormat,
+      opts
+    );
   }
 
   private createTextureOpts(gl: Webgl, sizedPixelFormat: number) {
@@ -84,16 +152,13 @@ export class FrameResources {
     return opts;
   }
 
-  private destroy(gl: Webgl) {
-    /*
-    if (!this.fbo) {
-      return;
-    }
+  private destroyResizableResources(gl: Webgl) {
+    if (this.forwardFbo) { this.forwardFbo.destroy(gl); }
+    if (this.forwardDepthTex) { this.forwardDepthTex.destroy(gl); }
+    if (this.forwardColorTex) { this.forwardColorTex.destroy(gl); }
 
-    this.fbo.attachments.forEach(a => gl.deleteTexture(a.glId));
-    this.fbo.destroy(gl);
-    this.fbo = null;
-    */
+    if (this.tonemappingFbo) { this.tonemappingFbo.destroy(gl); }
+    if (this.tonemappingResultTex) { this.tonemappingResultTex.destroy(gl); }
   }
 
 }

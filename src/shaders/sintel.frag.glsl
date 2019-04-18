@@ -7,7 +7,6 @@ precision highp usampler2D;
 // uniform vec2 u_viewport;
 uniform vec3 u_cameraPosition;
 uniform usampler2D u_albedoTexture;
-uniform float u_gamma;
 uniform float u_fresnelExponent;
 uniform float u_fresnelMultiplier;
 uniform vec3 u_fresnelColor;
@@ -58,6 +57,7 @@ Material createMaterial() {
   material.toEye = normalize(u_cameraPosition - v_Position);
   material.fresnel = dotMax0(material.normal, material.toEye);
   material.albedo = vec3(albedoU) / 255.0;
+  material.albedo = sRGBtoLinear(material.albedo, 2.4);
   material.positionWS = v_Position;
 
   vec3 toCaster = normalize(u_directionalShadowCasterPosition.xyz - v_Position);
@@ -112,7 +112,5 @@ void main() {
   material.skin = skinShader(material, skinParams);
   color = doShading(material, lights);
 
-  // color = tonemapReinhard(color);
-  // outColor1 = vec4(gammaFix(color, u_gamma), 1.0);
   outColor1 = vec4(color, 1.0);
 }

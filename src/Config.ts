@@ -1,6 +1,7 @@
 import {fromValues as Vec2} from 'gl-vec2';
 import {vec3, fromValues as Vec3, scale} from 'gl-vec3';
 import {hexToVec3, sphericalToCartesian, arrayToVec3} from 'gl-utils';
+import {TonemappingMode} from 'webfx/passes/TonemappingPass';
 
 
 export interface LightCfg {
@@ -11,15 +12,30 @@ export interface LightCfg {
   energy: number;
 }
 
+export interface ColorGradingProp {
+  color: vec3;
+  value: number;
+}
+const createColorGradingProp = (color: vec3, value: number) =>
+  ({ color, value });
+
+export interface ColorGradingPerRangeSettings {
+  saturation: ColorGradingProp;
+  contrast: ColorGradingProp;
+  gamma: ColorGradingProp;
+  gain: ColorGradingProp;
+  offset: ColorGradingProp;
+}
+
+
+const SHADOWS_ORTHO_SIZE = 5;
+
 
 export class Config {
 
-  // 43a7a9
-  public readonly clearColor: vec3 = hexToVec3('#a0a0a0');
+  public readonly clearColor: vec3 = hexToVec3('#a0a0a0'); // 43a7a9 // TODO final value
   public readonly clearDepth: number = 1.0;
   public readonly resizeUpdateFreq: number = 1000; // ms
-
-  // public readonly gamma = 2.2;
 
 
   // <editor-fold> CAMERA
@@ -45,14 +61,15 @@ export class Config {
     directionalLight: {
       posPhi: 140, // horizontal [dgr]
       posTheta: 45, // verical [dgr]
-      posRadius: 10, // verify with projection box below!!!
-      target: Vec3(0, 0, 0),
+      posRadius: SHADOWS_ORTHO_SIZE, // verify with projection box below!!!
+      target: Vec3(0, 2, 0),
       projection: {
-        left: -10, right: 10,
-        top: 10, bottom: -10,
+        left: -SHADOWS_ORTHO_SIZE, right: SHADOWS_ORTHO_SIZE,
+        top: SHADOWS_ORTHO_SIZE, bottom: -SHADOWS_ORTHO_SIZE,
         near: 0.1, far: 20,
       },
     },
+    showDebugView: false,
   };
 
   /** Convert spherical->cartesian */
@@ -67,7 +84,7 @@ export class Config {
   // <editor-fold> LIGHTS
   public readonly lightAmbient = {
     color: hexToVec3('#a0a0a0'),
-    energy: 0.15,
+    energy: 0.02,
   };
   public readonly light0 = {
     posPhi: 125, // horizontal [dgr]
@@ -91,6 +108,59 @@ export class Config {
     energy: 0.55,
   };
   // </editor-fold> // END: LIGHTS
+
+
+  // <editor-fold> POSTFX
+  public readonly postfx = {
+    gamma: 2.2,
+    // tonemapping
+    tonemappingOp: TonemappingMode.ACES_UE4, // TODO
+    exposure: 1.0, // or calc automatically?
+    whitePoint: 1.0,
+    acesC: 0.8,
+    acesS: 1.0,
+    // fxaa
+    useFxaa: true,
+    subpixel: 0.75,
+    edgeThreshold: 0.125,
+    edgeThresholdMin: 0.0625,
+    // color grading
+    // @see https://docs.unrealengine.com/en-us/Engine/Rendering/PostProcessEffects/ColorGrading
+    colorGrading: {
+      global: {
+        saturation: createColorGradingProp(Vec3(1, 1, 1), 1),
+        contrast: createColorGradingProp(Vec3(1, 1, 1), 1),
+        gamma: createColorGradingProp(Vec3(1, 1, 1), 1),
+        gain: createColorGradingProp(Vec3(1, 1, 1), 1),
+        offset: createColorGradingProp(Vec3(0, 0, 0), 0),
+        // tint: createColorGradingProp(Vec3(0, 0, 0), 0),
+      },
+      shadows: {
+        saturation: createColorGradingProp(Vec3(1, 1, 1), 1),
+        contrast: createColorGradingProp(Vec3(1, 1, 1), 1),
+        gamma: createColorGradingProp(Vec3(1, 1, 1), 1),
+        gain: createColorGradingProp(Vec3(1, 1, 1), 1),
+        offset: createColorGradingProp(Vec3(0, 0, 0), 0),
+        shadowsMax: 0.09,
+      },
+      midtones: {
+        saturation: createColorGradingProp(Vec3(1, 1, 1), 1),
+        contrast: createColorGradingProp(Vec3(1, 1, 1), 1),
+        gamma: createColorGradingProp(Vec3(1, 1, 1), 1),
+        gain: createColorGradingProp(Vec3(1, 1, 1), 1),
+        offset: createColorGradingProp(Vec3(0, 0, 0), 0),
+      },
+      highlights: {
+        saturation: createColorGradingProp(Vec3(1, 1, 1), 1),
+        contrast: createColorGradingProp(Vec3(1, 1, 1), 1),
+        gamma: createColorGradingProp(Vec3(1, 1, 1), 1),
+        gain: createColorGradingProp(Vec3(1, 1, 1), 1),
+        offset: createColorGradingProp(Vec3(0, 0, 0), 0),
+        highlightsMin: 0.5,
+      },
+    },
+  };
+  // </editor-fold> // END: POSTFX
 
 
   // <editor-fold> SINTEL

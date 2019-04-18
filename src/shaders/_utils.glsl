@@ -2,12 +2,43 @@ vec2 fixOpenGLTextureCoords_AxisY(vec2 uv) {
   return vec2(uv.x, 1.0 - uv.y);
 }
 
-vec3 tonemapReinhard (vec3 color) {
-  return color / (color + vec3(1.0));
+float doGamma (float color, float gammaValue) {
+  return pow(color, 1.0 / gammaValue);
+}
+vec3 doGamma (vec3 color, float gammaValue) {
+  return pow(color, vec3(1.0 / gammaValue));
+}
+float sRGBtoLinear (float color, float gammaValue) {
+  // http://renderwonk.com/blog/index.php/archive/adventures-with-gamma-correct-rendering/
+  if (color > 0.04045) {
+    float n = color + 0.055;
+    return pow(n / 1.055, gammaValue);
+  }
+  return color / 12.92;
+}
+vec3 sRGBtoLinear (vec3 color, float gammaValue) {
+  return vec3(
+    sRGBtoLinear(color.r, gammaValue),
+    sRGBtoLinear(color.g, gammaValue),
+    sRGBtoLinear(color.b, gammaValue)
+  );
+}
+/*
+// OR: https://github.com/EpicGames/UnrealEngine/blob/release/Engine/Shaders/Private/GammaCorrectionCommon.ush
+half3 sRGBToLinear( half3 Color ) {
+	Color = max(6.10352e-5, Color); // minimum positive non-denormal (fixes black problem on DX11 AMD and NV)
+	return Color > 0.04045 ? pow( Color * (1.0 / 1.055) + 0.0521327, 2.4 ) : Color * (1.0 / 12.92);
+}*/
+
+
+float toLuma_fromGamma (vec3 rgbCol) {
+  vec3 toLumaCoef = vec3(0.299f, 0.587f, 0.114f);
+  return dot(toLumaCoef, rgbCol);
 }
 
-vec3 gammaFix (vec3 color, float gamma) {
-  return pow(color, vec3(1.0/gamma));
+float toLuma_fromLinear(vec3 rgbCol) {
+  vec3 toLumaCoef = vec3(0.2126729f,  0.7151522f, 0.0721750f);
+  return dot(toLumaCoef, rgbCol);
 }
 
 
@@ -40,3 +71,9 @@ float saturate (float v) { return clamp(v, 0.0, 1.0); }
 vec2  saturate (vec2  v) { return clamp(v, vec2(0.0, 0.0), vec2(1.0, 1.0)); }
 vec3  saturate (vec3  v) { return clamp(v, vec3(0.0, 0.0, 0.0), vec3(1.0, 1.0, 1.0)); }
 vec4  saturate (vec4  v) { return clamp(v, vec4(0.0, 0.0, 0.0, 0.0), vec4(1.0, 1.0, 1.0, 1.0)); }
+
+float max3(vec3 v){ return max(v.x, max(v.y, v.z)); }
+float max4(vec4 v){ return max(v.w, max3(v.xyz)); }
+
+float min3(vec3 v){ return min(v.x, min(v.y, v.z)); }
+float min4(vec4 v){ return min(v.w, min3(v.xyz)); }
