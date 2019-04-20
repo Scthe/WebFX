@@ -4,7 +4,7 @@ struct Material {
   vec3 toEye;
   float fresnel;
   vec3 albedo;
-  vec3 skin; // tmp result
+  // vec3 skin; // tmp result
   float shadow; // 0.0 - in shadow, 1.0 - in light
 };
 

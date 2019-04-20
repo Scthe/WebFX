@@ -10,8 +10,13 @@ export class MaterialComponent extends Component<ComponentType.Material> {
   public fresnelExponent = 11.8;
   public fresnelMultiplier = 17.5;
   public fresnelColor = [145, 27, 56]; // TODO no, use vec3 here!
-  public ssColor1 = [37, 135, 45];
-  public ssColor2 = [175, 70, 40];
+  public sssTransluency = 0.5;
+  public sssWidth = 60.0;
+  public sssBias = 0.022;
+  public sssGain = 0.0;
+  public sssStrength = 5.0;
+  // public ssColor1 = [37, 135, 45];
+  // public ssColor2 = [175, 70, 40];
 
   constructor(
     /* albedo for dielectrics, F0 for metalics*/

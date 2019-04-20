@@ -22,6 +22,9 @@ export class FrameResources {
   public shadowDepthTex: Texture;
   public shadowDepthFbo: Fbo;
   public shadowShader: Shader;
+  // sss
+  public sssDepthTex: Texture;
+  public sssDepthFbo: Fbo;
   // forward
   public meshShader: Shader;
   public forwardDepthTex: Texture;
@@ -34,11 +37,19 @@ export class FrameResources {
   // final
   public finalShader: Shader;
   public dbgShadowsShader: Shader;
+  public dbgSphereShader: Shader;
 
 
   public initialize (cfg: Config, device: Device) {
     this.initializeShaders(device.gl);
-    this.initializeShadowResources(cfg, device);
+
+    const shadowRes = this.initializeShadowResources(device, cfg.shadows.shadowmapSize);
+    this.shadowDepthTex = shadowRes.texture;
+    this.shadowDepthFbo = shadowRes.fbo;
+
+    const sssRes = this.initializeShadowResources(device, cfg.lightSSS.depthmapSize);
+    this.sssDepthTex = sssRes.texture;
+    this.sssDepthFbo = sssRes.fbo;
   }
 
   onResize (device: Device, d: Dimensions) {
@@ -63,7 +74,11 @@ export class FrameResources {
     );
     this.dbgShadowsShader = new Shader(gl,
       require('shaders/final.vert.glsl'), // just reuse simple fullscreen quad vertex shader
-      require('shaders/final.dbgShadows.glsl'),
+      require('shaders/final.dbgShadows.frag.glsl'),
+    );
+    this.dbgSphereShader = new Shader(gl,
+      require('shaders/final.dbgSphere.vert.glsl'),
+      require('shaders/final.dbgSphere.frag.glsl'),
     );
     this.tonemappingShader = new Shader(gl,
       require('shaders/final.vert.glsl'), // just reuse simple fullscreen quad vertex shader
@@ -103,19 +118,18 @@ export class FrameResources {
     ]);
   }
 
-  private initializeShadowResources (cfg: Config, device: Device) {
+  private initializeShadowResources (device: Device, size: number) {
     const {gl} = device;
-    const {shadows: shadowCfg} = cfg;
 
-    this.shadowDepthTex = this.createTexture(
+    const texture = this.createTexture(
       device,
       gl.DEPTH_COMPONENT16,
-      {width: shadowCfg.shadowmapSize, height: shadowCfg.shadowmapSize},
+      {width: size, height: size},
       this.createTextureOpts(gl, gl.DEPTH_COMPONENT16)
     );
-    this.shadowDepthFbo = new Fbo(gl, [
-      this.shadowDepthTex
-    ]);
+    const fbo = new Fbo(gl, [texture]);
+
+    return {texture, fbo};
   }
 
   private createTexture (

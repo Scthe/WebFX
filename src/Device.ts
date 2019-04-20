@@ -6,6 +6,7 @@ import {Dimensions, setUniforms} from 'gl-utils';
 import {DrawParams, applyDrawParams, DepthTest} from 'gl-utils/DrawParams';
 import {TextureBindingState, Shader} from 'resources';
 import {MeshComponent, TfxComponent} from 'ecs';
+import { generateSphere, createGpuShape } from 'gl-utils/shapes';
 
 
 interface TfxRenderParams {
@@ -19,6 +20,7 @@ export class Device {
 
   private drawParams = new DrawParams();
   private readonly backbufferFboId: any;
+  private readonly debugSphereMesh: MeshComponent;
   private readonly _surfaceSize: Dimensions;
   public readonly textureBindingState: TextureBindingState;
 
@@ -29,8 +31,19 @@ export class Device {
     applyDrawParams(gl, this.drawParams, null, true);
 
     this._surfaceSize = { width: 0, height: 0, };
+    this.debugSphereMesh = this.createDebugSphere(gl);
 
     this.textureBindingState = new TextureBindingState(gl);
+  }
+
+  private createDebugSphere (gl: Webgl): MeshComponent {
+    const ballShape = generateSphere({
+      radius: 1.0,
+      segments: 12,
+      rings: 12,
+    });
+
+    return createGpuShape(gl, ballShape, 'position');
   }
 
   setState (newState: DrawParams): void {
@@ -93,6 +106,10 @@ export class Device {
     // Wonder if it's stanadarized?
     const triCnt = 1;
     gl.drawArrays(gl.TRIANGLES, 0, triCnt * 3);
+  }
+
+  renderDebugSphere () {
+    this.renderMesh(this.debugSphereMesh);
   }
 
   set surfaceSize (d: Dimensions) {

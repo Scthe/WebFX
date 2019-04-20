@@ -27,16 +27,28 @@ export interface ColorGradingPerRangeSettings {
   offset: ColorGradingProp;
 }
 
+interface SphericalToCarthesian {
+  posPhi: number;
+  posTheta: number;
+  posRadius: number;
+}
+
 
 const SHADOWS_ORTHO_SIZE = 5;
 
 
 export class Config {
 
-  public readonly clearColor: vec3 = hexToVec3('#a0a0a0'); // 43a7a9 // TODO final value
+  public readonly clearColor: vec3 = hexToVec3('#5d5d5d'); // [43a7a9, a0a0a0] // TODO final value
   public readonly clearDepth: number = 1.0;
   public readonly resizeUpdateFreq: number = 1000; // ms
+  public readonly showDebugPositions = false;
 
+  /** Convert spherical->cartesian */
+  public sphericalToCartesian(sphericalCoords: SphericalToCarthesian) {
+    const pos = sphericalToCartesian(sphericalCoords.posPhi, sphericalCoords.posTheta, true);
+    return scale(pos, pos, sphericalCoords.posRadius);
+  }
 
   // <editor-fold> CAMERA
   public readonly camera = {
@@ -69,15 +81,8 @@ export class Config {
         near: 0.1, far: 20,
       },
     },
-    showDebugView: false,
+    showDebugView: true,
   };
-
-  /** Convert spherical->cartesian */
-  public getLightShadowPosition() {
-    const sph = this.shadows.directionalLight;
-    const pos = sphericalToCartesian(sph.posPhi, sph.posTheta, true);
-    return scale(pos, pos, sph.posRadius);
-  }
   // </editor-fold> // END: SHADOWS
 
 
@@ -106,6 +111,15 @@ export class Config {
     posRadius: 10,
     color: arrayToVec3([133, 171, 169], true),
     energy: 0.55,
+  };
+  public readonly lightSSS = {
+    // forward scatter
+    depthmapSize: 1024,
+    posPhi: -93, // horizontal [dgr]
+    posTheta: 55, // verical [dgr]
+    posRadius: SHADOWS_ORTHO_SIZE,
+    color: arrayToVec3([54, 6, 14], true),
+    // will reuse target & projection settings from shadows - safer this way..
   };
   // </editor-fold> // END: LIGHTS
 

@@ -6,16 +6,27 @@ precision highp usampler2D;
 
 // uniform vec2 u_viewport;
 uniform vec3 u_cameraPosition;
+// material
 uniform usampler2D u_albedoTexture;
-uniform float u_fresnelExponent;
-uniform float u_fresnelMultiplier;
-uniform vec3 u_fresnelColor;
-uniform vec3 u_ssColor1;
-uniform vec3 u_ssColor2;
+uniform float u_sssTransluency;
+uniform float u_sssWidth;
+uniform float u_sssBias;
+uniform float u_sssGain;
+uniform float u_sssStrength;
+uniform sampler2D u_sssDepthTex;
+uniform vec3 u_sssPosition;
+uniform vec3 u_sssLightColor;
+// uniform float u_fresnelExponent;
+// uniform float u_fresnelMultiplier;
+// uniform vec3 u_fresnelColor;
+// uniform vec3 u_ssColor1;
+// uniform vec3 u_ssColor2;
 // Shadow
 uniform sampler2D u_directionalShadowDepthTex;
 uniform vec4 u_directionalShadowCasterPosition; // [position.xyz, bias (negative if pcss)]
 uniform int u_directionalShadowSampleRadius;
+uniform mat4 u_sssMatrix_VP;
+uniform float u_sssFarPlane;
 uniform float u_maxShadowContribution;
 #define BIAS_FROM_UI (u_directionalShadowCasterPosition.w)
 #define USE_PCSS_SHADOWS (u_directionalShadowCasterPosition.w < 0.0f)
@@ -43,9 +54,11 @@ layout(location = 0) out vec4 outColor1;
 
 @import ./_utils;
 @import ./_material;
-@import ./_skin;
+// @i mport ./_skin;
 // @i mport ./_pbr;
 @import ./_shadows;
+#define SSSS_GLSL_3 1
+@import ./_separableSSSSS;
 
 
 Material createMaterial() {
@@ -68,6 +81,7 @@ Material createMaterial() {
   return material;
 }
 
+/*
 SkinParams createSkinParams() {
   SkinParams skinParams;
   skinParams.fresnelExponent = u_fresnelExponent;
@@ -77,26 +91,44 @@ SkinParams createSkinParams() {
   skinParams.ssColor2 = u_ssColor2;
   return skinParams;
 }
+*/
 
 
 vec3 doShading(Material material, Light lights[3]) {
-  vec3 result = u_lightAmbient.rgb * u_lightAmbient.a;
+  vec3 ambient = u_lightAmbient.rgb * u_lightAmbient.a;
+  vec3 radianceSum = vec3(0.0);
 
   for (uint i = 0u; i < 3u; i++) {
     Light light = lights[i];
 
-    // result += pbr(material, light) * (1.0f - material.shadow);
+    // ambient += pbr(material, light) * (1.0f - material.shadow);
 
     vec3 L = normalize(light.position - material.positionWS); // wi in integral
     float NdotL = dotMax0(material.normal, L);
     vec3 radiance = light.color * light.intensity; // incoming color from light
 
     vec3 contrib = material.albedo * radiance * NdotL;
-    contrib *= clamp(material.shadow, 1.0 - u_maxShadowContribution, 1.0);
-    result += contrib;
+    radianceSum += contrib;
   }
 
-  return result;
+  // add SSSSS forward scattering - transluency
+  vec3 sssL = normalize(u_sssPosition - material.positionWS);
+  vec3 contribSSS = SSSSTransmittance(
+    u_sssTransluency, // float translucency,
+    u_sssWidth, // float sssWidth,
+    material.positionWS, // float3 worldPosition,
+    material.normal, // float3 worldNormal,
+    sssL, // float3 light,
+    u_sssDepthTex, // SSSSTexture2D shadowMap,
+    u_sssMatrix_VP, // float4x4 lightViewProjection,
+    u_sssFarPlane // float lightFarPlane
+  );
+  contribSSS = contribSSS * radianceSum * u_sssStrength;
+  // contribSSS = contribSSS * u_sssLightColor * u_sssStrength;
+
+  radianceSum = radianceSum * clamp(material.shadow, 1.0 - u_maxShadowContribution, 1.0);
+  return ambient + radianceSum + contribSSS;
+  // return contribSSS;
 }
 
 
@@ -108,8 +140,8 @@ void main() {
 
   vec3 color;
   Material material = createMaterial();
-  SkinParams skinParams = createSkinParams();
-  material.skin = skinShader(material, skinParams);
+  // SkinParams skinParams = createSkinParams();
+  // material.skin = skinShader(material, skinParams);
   color = doShading(material, lights);
 
   outColor1 = vec4(color, 1.0);

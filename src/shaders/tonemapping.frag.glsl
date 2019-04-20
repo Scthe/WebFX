@@ -44,6 +44,10 @@ void main() {
   vec2 pixelTS = to_0_1(v_position);
   vec3 colorHDR = texture(u_source, pixelTS).rgb;
 
+  // color grade raw HDR
+  // In old days we used LUTs for this, but LUTs require conversion to LDR.
+  // Since HDR displays are now avaialable, we do color grading in HDR,
+  // skipping LDR conversion. This, and also cause we can.
   vec3 colorAfterColorGrading = colorCorrectAll(colorHDR);
 
   outColor.rgb = saturate(

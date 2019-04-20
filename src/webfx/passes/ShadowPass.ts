@@ -1,24 +1,31 @@
+import {vec3} from 'gl-vec3';
 import {mat4, create as Mat4, ortho, lookAt} from 'gl-mat4';
 import {setUniforms, AXIS_Y, getMVP} from 'gl-utils';
 import {DrawParams, DepthTest, CullingMode} from 'gl-utils/DrawParams';
 
-import {FboBindType} from 'resources';
+import {FboBindType, Fbo} from 'resources';
 import {Config} from 'Config';
 import {PassExecuteParams} from './structs';
-import { MaterialComponent, TransformComponent, MeshComponent } from 'ecs';
+import {MaterialComponent, TransformComponent, MeshComponent} from 'ecs';
+
+interface ShadowPassData {
+  fbo: Fbo;
+  position: vec3;
+  renderHair: boolean;
+}
 
 
 export class ShadowPass {
 
-  execute (params: PassExecuteParams) {
+  execute (params: PassExecuteParams, data: ShadowPassData) {
     const {cfg, device, ecs, frameRes} = params;
-    const {shadows: shadowsCfg} = cfg;
     const {gl} = device;
+    const {fbo, position} = data;
 
-    frameRes.shadowDepthFbo.bind(gl, FboBindType.Draw, true);
+    fbo.bind(gl, FboBindType.Draw, true);
 
     gl.clear(gl.DEPTH_BUFFER_BIT);
-    gl.viewport(0.0, 0.0, shadowsCfg.shadowmapSize, shadowsCfg.shadowmapSize);
+    gl.viewport(0.0, 0.0, fbo.dimensions[0], fbo.dimensions[1]);
 
     const shader = frameRes.shadowShader;
     shader.use(gl);
@@ -34,28 +41,27 @@ export class ShadowPass {
       const modelMatrix = tfx.modelMatrix;
 
       setUniforms(device, shader, {
-        'u_MVP': this.getLightShadowMvp(cfg, modelMatrix),
+        'u_MVP': this.getLightShadowMvp(cfg, modelMatrix, position),
       }, true);
 
       device.renderMesh(mesh);
     }, MaterialComponent, TransformComponent, MeshComponent);
   }
 
-  public getLightShadowMvp = (cfg: Config, modelMatrix: mat4) => {
-    const vMat = this.getDepthViewMatrix(cfg);
+  public getLightShadowMvp = (cfg: Config, modelMatrix: mat4, lightPos: vec3) => {
+    const vMat = this.getDepthViewMatrix(cfg, lightPos);
     const pMat = this.getDepthProjectionMatrix(cfg);
     return getMVP(modelMatrix, vMat, pMat);
   }
 
-  private getDepthViewMatrix(cfg: Config) {
+  private getDepthViewMatrix(cfg: Config, lightPos: vec3) {
     const dl = cfg.shadows.directionalLight;
-    const pos = cfg.getLightShadowPosition();
-    return lookAt(Mat4(), pos, dl.target, AXIS_Y);
+    return lookAt(Mat4(), lightPos, dl.target, AXIS_Y); // target - both shadows and SSS
   }
 
   private getDepthProjectionMatrix(cfg: Config) {
     // this is for directional light, all rays are parallel
-    const dpm = cfg.shadows.directionalLight.projection;
+    const dpm = cfg.shadows.directionalLight.projection; // both shadows and SSS
     return ortho(Mat4(),
       dpm.left, dpm.right,
       dpm.bottom, dpm.top,

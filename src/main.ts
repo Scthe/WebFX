@@ -1,4 +1,4 @@
-import {mat4} from 'gl-mat4';
+import {mat4, create as Mat4} from 'gl-mat4';
 import {copy as copyV3} from 'gl-vec3';
 import {copy as copyV2} from 'gl-vec2';
 import {createWebGl2Context, Dimensions, getMVP} from 'gl-utils';
@@ -128,17 +128,35 @@ const createRenderParams = (globals: GlobalVariables): PassExecuteParams => {
 
 const renderScene = (globals: GlobalVariables) => {
   const params = createRenderParams(globals);
+  const {gl, config, frameResources} = globals;
 
-  const clearColor = globals.config.clearColor;
-  globals.gl.clearColor(clearColor[0], clearColor[1], clearColor[2], 1.0);
+  const clearColor = config.clearColor;
+  gl.clearColor(clearColor[0], clearColor[1], clearColor[2], 1.0);
 
+  // shadow pass
   const shadowPass = new ShadowPass();
-  shadowPass.execute(params);
+  const shadowPos = config.sphericalToCartesian(config.shadows.directionalLight);
+  shadowPass.execute(params, {
+    fbo: frameResources.shadowDepthFbo,
+    position: shadowPos,
+    renderHair: true,
+  });
 
+  // SSS pass - just depth, so reuse shadow pass
+  const sssPos = config.sphericalToCartesian(config.lightSSS);
+  shadowPass.execute(params, {
+    fbo: frameResources.sssDepthFbo,
+    position: sssPos,
+    renderHair: false,
+  });
+
+  // forward rendering
   const forwardPass = new ForwardPass();
   forwardPass.execute(params, {
-    getLightShadowMvp: (modelMat: mat4) => shadowPass.getLightShadowMvp(globals.config, modelMat),
-    shadowDepthTexture: globals.frameResources.shadowDepthTex,
+    getLightShadowMvp: (modelMat: mat4) => shadowPass.getLightShadowMvp(config, modelMat, shadowPos),
+    getSSS_VP: () => shadowPass.getLightShadowMvp(config, Mat4(), sssPos),
+    shadowLightPosition: shadowPos,
+    sssPosition: sssPos,
   });
 
   // const drawParams = createWebFxDrawParams(globals);
@@ -146,10 +164,11 @@ const renderScene = (globals: GlobalVariables) => {
   // globals.webfx.renderMeshes(drawParams);
   // globals.webfx.renderHair(drawParams);
 
-
+  // color grading + tonemapping
   const tonemappingPass = new TonemappingPass();
   tonemappingPass.execute(params);
 
+  // display: fxaa + gamma
   const finalPass = new FinalPass();
   finalPass.execute(params);
 };

@@ -54,9 +54,11 @@ export class UISystem {
     const colorGrading = this.cfg.postfx.colorGrading;
 
     this.addColorController(this.gui, this.cfg, 'clearColor', 'Bg color');
+    this.gui.add(this.cfg, 'showDebugPositions').name('Show positions');
 
     this.addMaterialFolder(this.gui, ecs, 'Sintel', ENTITY_SINTEL);
     this.addMaterialFolder(this.gui, ecs, 'Sintel_eyes', ENTITY_SINTEL_EYES);
+    this.addSSS_General(this.gui);
     this.addAmbientLightFolder(this.gui);
     this.addLightFolder(this.gui, this.cfg.light0, 'Light 0');
     this.addLightFolder(this.gui, this.cfg.light1, 'Light 1');
@@ -76,13 +78,28 @@ export class UISystem {
     const mat = ecs.getComponent(entity, MaterialComponent);
 
     const dir = gui.addFolder(folderName);
-    // dir.open();
+    dir.open();
 
-    dir.add(mat, 'fresnelExponent', 0.0, 20.0).name('Fresnel exp');
-    dir.add(mat, 'fresnelMultiplier', 0.0, 20.0).name('Fresnel mul');
-    dir.addColor(mat, 'fresnelColor').name('Fresnel color');
-    dir.addColor(mat, 'ssColor1').name('SSS color 1');
-    dir.addColor(mat, 'ssColor2').name('SSS color 2');
+    // dir.add(mat, 'fresnelExponent', 0.0, 20.0).name('Fresnel exp');
+    // dir.add(mat, 'fresnelMultiplier', 0.0, 20.0).name('Fresnel mul');
+    // dir.addColor(mat, 'fresnelColor').name('Fresnel color');
+
+    dir.add(mat, 'sssTransluency', 0.0, 1.0).name('SSS transluency');
+    dir.add(mat, 'sssWidth', 0, 100).name('SSS width');
+    dir.add(mat, 'sssBias', 0.0, 0.1).name('SSS bias');
+    dir.add(mat, 'sssGain', 0.0, 1.0).name('SSS gain');
+    dir.add(mat, 'sssStrength', 0.0, 20.0).name('SSS strength');
+    // dir.addColor(mat, 'ssColor1').name('SSS color 1');
+    // dir.addColor(mat, 'ssColor2').name('SSS color 2');
+  }
+
+  private addSSS_General (gui: GUI) {
+    const dir = gui.addFolder('SSS general');
+    dir.open();
+
+    dir.add(this.cfg.lightSSS, 'posPhi', -179, 179).step(1).name('Position phi');
+    dir.add(this.cfg.lightSSS, 'posTheta', 15, 165).step(1).name('Position th');
+    this.addColorController(dir, this.cfg.lightSSS, 'color', 'Color');
   }
 
   private addShadowsFolder (gui: GUI) {
@@ -100,7 +117,7 @@ export class UISystem {
     dir.add(this.cfg.shadows, 'bias', 0.01, 0.1).name('Bias');
 
     dir.add(this.cfg.shadows.directionalLight, 'posPhi', -179, 179).step(1).name('Position phi');
-    dir.add(this.cfg.shadows.directionalLight, 'posTheta', 15, 85).step(1).name('Position th');
+    dir.add(this.cfg.shadows.directionalLight, 'posTheta', 15, 165).step(1).name('Position th');
     // dir.add(this.cfg.shadows.directionalLight, 'posRadius', 1, 10).step(0.1).name('Position r');
   }
 
@@ -117,7 +134,7 @@ export class UISystem {
     // dir.open();
 
     dir.add(lightObj, 'posPhi', -179, 179).step(1).name('Position phi');
-    dir.add(lightObj, 'posTheta', 15, 85).step(1).name('Position th');
+    dir.add(lightObj, 'posTheta', 15, 165).step(1).name('Position th');
     dir.add(lightObj, 'posRadius', 0.0, 10.0).name('Position r');
     this.addColorController(dir, lightObj, 'color', 'Color');
     dir.add(lightObj, 'energy', 0.0, 2.0).name('Energy');
