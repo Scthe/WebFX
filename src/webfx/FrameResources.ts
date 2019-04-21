@@ -22,7 +22,7 @@ export class FrameResources {
   public shadowDepthTex: Texture;
   public shadowDepthFbo: Fbo;
   public shadowShader: Shader;
-  // sss
+  // SSS - forward scattering
   public sssDepthTex: Texture;
   public sssDepthFbo: Fbo;
   // forward
@@ -30,6 +30,11 @@ export class FrameResources {
   public forwardDepthTex: Texture;
   public forwardColorTex: Texture;
   public forwardFbo: Fbo;
+  public forwardFbo_onlyColor: Fbo; // needed for SSSSS blur
+  // SSS
+  public sssBlurShader: Shader;
+  public sssBlurPingPongTex: Texture;
+  public sssBlurPingPongFbo: Fbo;
   // tonemapping
   public tonemappingShader: Shader;
   public tonemappingResultTex: Texture; // [rgb, luma]
@@ -69,11 +74,11 @@ export class FrameResources {
       require('shaders/sintel.frag.glsl'),
     );
     this.finalShader = new Shader(gl,
-      require('shaders/final.vert.glsl'),
+      require('shaders/fullscreenQuad.vert.glsl'),
       require('shaders/final.frag.glsl'),
     );
     this.dbgShadowsShader = new Shader(gl,
-      require('shaders/final.vert.glsl'), // just reuse simple fullscreen quad vertex shader
+      require('shaders/fullscreenQuad.vert.glsl'),
       require('shaders/final.dbgShadows.frag.glsl'),
     );
     this.dbgSphereShader = new Shader(gl,
@@ -81,8 +86,12 @@ export class FrameResources {
       require('shaders/final.dbgSphere.frag.glsl'),
     );
     this.tonemappingShader = new Shader(gl,
-      require('shaders/final.vert.glsl'), // just reuse simple fullscreen quad vertex shader
+      require('shaders/fullscreenQuad.vert.glsl'),
       require('shaders/tonemapping.frag.glsl'),
+    );
+    this.sssBlurShader = new Shader(gl,
+      require('shaders/fullscreenQuad.vert.glsl'),
+      require('shaders/sssBlur.frag.glsl'),
     );
   }
 
@@ -102,6 +111,19 @@ export class FrameResources {
     this.forwardFbo = new Fbo(gl, [
       this.forwardDepthTex,
       this.forwardColorTex,
+    ]);
+    this.forwardFbo_onlyColor = new Fbo(gl, [
+      this.forwardColorTex,
+    ]);
+
+    // also SSS here, cause needs to be EXACT same
+    this.sssBlurPingPongTex = this.createTexture(
+      device,
+      gl.RGBA32F, d,
+      this.createTextureOpts(gl, gl.RGBA32F)
+    );
+    this.sssBlurPingPongFbo = new Fbo(gl, [
+      this.sssBlurPingPongTex,
     ]);
   }
 
@@ -168,8 +190,12 @@ export class FrameResources {
 
   private destroyResizableResources(gl: Webgl) {
     if (this.forwardFbo) { this.forwardFbo.destroy(gl); }
+    if (this.forwardFbo_onlyColor) { this.forwardFbo_onlyColor.destroy(gl); }
     if (this.forwardDepthTex) { this.forwardDepthTex.destroy(gl); }
     if (this.forwardColorTex) { this.forwardColorTex.destroy(gl); }
+
+    if (this.sssBlurPingPongFbo) { this.sssBlurPingPongFbo.destroy(gl); }
+    if (this.sssBlurPingPongTex) { this.sssBlurPingPongTex.destroy(gl); }
 
     if (this.tonemappingFbo) { this.tonemappingFbo.destroy(gl); }
     if (this.tonemappingResultTex) { this.tonemappingResultTex.destroy(gl); }

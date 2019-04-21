@@ -306,15 +306,18 @@ float3 SSSSTransmittance(
   // Regular world to light space matrix.
   float4x4 lightViewProjection,
   // Far plane distance used in the light projection matrix.
-  float lightFarPlane
+  float lightFarPlane,
+  // custom params:
+  float sssBias,
+  float sssGain
 ) {
   // Calculate the scale of the effect.
   float scale = sssWidth * (1.0 - translucency); // sssWidth in  mm / world space unit
 
   // First we shrink the position inwards the surface to avoid artifacts:
   // (Note that this can be done once for all the lights)
-  // NOTE: u_sssBias = 0.005
-  float4 shrinkedPos = float4(worldPosition - u_sssBias * worldNormal, 1.0); // TODO this is bias..
+  // NOTE: sssBias = 0.005
+  float4 shrinkedPos = float4(worldPosition - sssBias * worldNormal, 1.0); // TODO this is bias..
 
   // Now we calculate the thickness from the light point of view:
   float4 shadowPosition = SSSSMul(shrinkedPos, lightViewProjection); // NOPE, shadowMatrix also has model matrix!
@@ -344,31 +347,15 @@ float3 SSSSTransmittance(
 
   // Using the profile, we finally approximate the transmitted lighting from
   // the back of the object:
-  // NOTE: u_sssGain = 0.3
-  return profile * SSSSSaturate(u_sssGain + dot(light, -worldNormal));
-  // return profile * SSSSSaturate(dot(light, worldNormal));
-  // return profile;
-  // return vec3(
-    // SSSSSaturate(0.3 + dot(light, -worldNormal))
-    // dotMax0(light, -worldNormal)
-    // 0.3 + dot(light, worldNormal)
-  // );
+  // NOTE: sssGain = 0.3
+  // we negate normal, cause we are interested in FORWARD scattering
+  return profile * SSSSSaturate(sssGain + dot(light, -worldNormal));
 }
 
 
-
-//-----------------------------------------------------------------------------
-// Separable SSS Reflectance Vertex Shader
-
-void SSSSBlurVS(float4 position,
-                out float4 svPosition,
-                inout float2 texcoord) {
-    svPosition = position;
-}
 
 //-----------------------------------------------------------------------------
 // Separable SSS Reflectance Pixel Shader
-
 
 
 float4 SSSSBlurPS(
@@ -400,23 +387,27 @@ float4 SSSSBlurPS(
   // Direction of the blur:
   //   - First pass:   float2(1.0, 0.0)
   //   - Second pass:  float2(0.0, 1.0)
-  float2 dir
+  float2 dir,
+  // replaced macros:
+  float sssFovy,
+  float sssStrength,
+  bool sssFollowSurface
 ) {
   // Fetch color of current pixel:
   float4 colorM = SSSSSamplePoint(colorTex, texcoord);
 
   // Fetch linear depth of current pixel:
   // NOTE: LINEAR DEPTH!
-  float depthM = SSSSSamplePoint(depthTex, texcoord).r;
+  float depthM = SSSSS_sampleDepthLinear(depthTex, texcoord);
 
   // Calculate the sssWidth scale (1.0 for a unit plane sitting on the
   // projection window):
-  float distanceToProjectionWindow = 1.0 / tan(0.5 * radians(SSSS_FOVY));
+  float distanceToProjectionWindow = 1.0 / tan(0.5 * radians(sssFovy));
   float scale = distanceToProjectionWindow / depthM;
 
 	// Calculate the final step to fetch the surrounding pixels:
   float2 finalStep = scale * dir;
-  finalStep *= SSSS_STREGTH_SOURCE; // Modulate it using the alpha channel.
+  finalStep *= sssStrength; // Modulate it using the alpha channel.
   finalStep *= 1.0 / (2.0 * sssWidth); // sssWidth in mm / world space unit, divided by 2 as uv coords are from [0 1]
 
   // Accumulate the center sample:
@@ -430,15 +421,17 @@ float4 SSSSBlurPS(
     float2 offset = texcoord + kernel[i].a * finalStep;
     float4 color = SSSSSample(colorTex, offset);
 
-    #if SSSS_FOLLOW_SURFACE == 1
+    if (sssFollowSurface) {
       // If the difference in depth is huge, we lerp color back to "colorM":
-      float depth = SSSSSample(depthTex, offset).r;
+      float depth = SSSSS_sampleDepthLinear(depthTex, offset);
 
-      float s = SSSSSaturate( abs(depthM - depth) / (distanceToProjectionWindow * (maxOffsetMm / sssWidth)));
-      s = min(1,s*1.5); // custom / user definable scaling
+      float s = SSSSSaturate(
+        abs(depthM - depth) / (distanceToProjectionWindow * (maxOffsetMm / sssWidth))
+      );
+      s = min(1.0, s * 1.5); // custom / user definable scaling
 
       color.rgb = SSSSLerp(color.rgb, colorM.rgb, s);
-    #endif
+    }
 
     // Accumulate:
     colorBlurred.rgb += kernel[i].rgb * color.rgb;

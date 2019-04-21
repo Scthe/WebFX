@@ -93,7 +93,7 @@ export class Device {
     gl.drawElements(gl.TRIANGLES, triangleCnt * 3, indexGlType, 0);
   }
 
-  renderFullscreenQuad (autoSetDrawParams = true): void {
+  renderFullscreenQuad (autoSetDrawParams = false): void {
     const gl = this.gl;
 
     if (autoSetDrawParams) {

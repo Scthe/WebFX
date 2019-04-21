@@ -15,7 +15,6 @@ uniform float u_sssGain;
 uniform float u_sssStrength;
 uniform sampler2D u_sssDepthTex;
 uniform vec3 u_sssPosition;
-uniform vec3 u_sssLightColor;
 // uniform float u_fresnelExponent;
 // uniform float u_fresnelMultiplier;
 // uniform vec3 u_fresnelColor;
@@ -50,6 +49,13 @@ in vec4 v_PositionLightShadowSpace;
 
 
 layout(location = 0) out vec4 outColor1;
+
+
+// required by SSSSS import, but not used here (used in SSS blur)
+float SSSSS_sampleDepthLinear (sampler2D depthTex, vec2 texcoord) {
+  return 0.0;
+}
+
 
 
 @import ./_utils;
@@ -121,10 +127,10 @@ vec3 doShading(Material material, Light lights[3]) {
     sssL, // float3 light,
     u_sssDepthTex, // SSSSTexture2D shadowMap,
     u_sssMatrix_VP, // float4x4 lightViewProjection,
-    u_sssFarPlane // float lightFarPlane
+    u_sssFarPlane, // float lightFarPlane
+    u_sssBias, u_sssGain
   );
   contribSSS = contribSSS * radianceSum * u_sssStrength;
-  // contribSSS = contribSSS * u_sssLightColor * u_sssStrength;
 
   radianceSum = radianceSum * clamp(material.shadow, 1.0 - u_maxShadowContribution, 1.0);
   return ambient + radianceSum + contribSSS;

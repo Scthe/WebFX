@@ -53,7 +53,7 @@ export class TonemappingPass {
       'u_acesS': cfg.postfx.acesS,
     }, true);
 
-    device.renderFullscreenQuad();
+    device.renderFullscreenQuad(true);
   }
 
   private prepareColorGradingParams(uSufix: string, obj: ColorGradingPerRangeSettings) {

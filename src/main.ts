@@ -22,6 +22,7 @@ import {
   ForwardPass,
   FinalPass,
   TonemappingPass,
+  SSSBlurPass,
 } from 'webfx/passes';
 
 
@@ -122,6 +123,7 @@ const createRenderParams = (globals: GlobalVariables): PassExecuteParams => {
         camera.perspectiveMatrix
       ),
       position: controller.position,
+      settings: camera.settings,
     }
   };
 };
@@ -157,6 +159,20 @@ const renderScene = (globals: GlobalVariables) => {
     getSSS_VP: () => shadowPass.getLightShadowMvp(config, Mat4(), sssPos),
     shadowLightPosition: shadowPos,
     sssPosition: sssPos,
+  });
+
+  // SSS blur
+  // just blur everything at once, ignore light leaking between eyes/face
+  const sssBlurPass = new SSSBlurPass();
+  sssBlurPass.execute(params, {
+    fbo: frameResources.sssBlurPingPongFbo,
+    sourceTexture: frameResources.forwardColorTex,
+    isFirstPass: true,
+  });
+  sssBlurPass.execute(params, {
+    fbo: frameResources.forwardFbo_onlyColor,
+    sourceTexture: frameResources.sssBlurPingPongTex,
+    isFirstPass: false,
   });
 
   // const drawParams = createWebFxDrawParams(globals);

@@ -80,26 +80,21 @@ export class UISystem {
     const dir = gui.addFolder(folderName);
     dir.open();
 
-    // dir.add(mat, 'fresnelExponent', 0.0, 20.0).name('Fresnel exp');
-    // dir.add(mat, 'fresnelMultiplier', 0.0, 20.0).name('Fresnel mul');
-    // dir.addColor(mat, 'fresnelColor').name('Fresnel color');
-
     dir.add(mat, 'sssTransluency', 0.0, 1.0).name('SSS transluency');
     dir.add(mat, 'sssWidth', 0, 100).name('SSS width');
     dir.add(mat, 'sssBias', 0.0, 0.1).name('SSS bias');
     dir.add(mat, 'sssGain', 0.0, 1.0).name('SSS gain');
     dir.add(mat, 'sssStrength', 0.0, 20.0).name('SSS strength');
-    // dir.addColor(mat, 'ssColor1').name('SSS color 1');
-    // dir.addColor(mat, 'ssColor2').name('SSS color 2');
   }
 
   private addSSS_General (gui: GUI) {
-    const dir = gui.addFolder('SSS general');
+    const dir = gui.addFolder('SSS general / blur');
     dir.open();
 
     dir.add(this.cfg.lightSSS, 'posPhi', -179, 179).step(1).name('Position phi');
     dir.add(this.cfg.lightSSS, 'posTheta', 15, 165).step(1).name('Position th');
-    this.addColorController(dir, this.cfg.lightSSS, 'color', 'Color');
+    dir.add(this.cfg.lightSSS, 'blurWidth', 1, 100).name('SSS width');
+    dir.add(this.cfg.lightSSS, 'blurStrength', 0.0, 1.0).name('SSS strength');
   }
 
   private addShadowsFolder (gui: GUI) {

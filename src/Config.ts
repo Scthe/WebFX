@@ -44,6 +44,17 @@ export class Config {
   public readonly resizeUpdateFreq: number = 1000; // ms
   public readonly showDebugPositions = false;
 
+  // ugh.... ?!
+  // sure, global stencil bits table. That never went wrong. Genius!
+  // It's not like we have to actually think about this stuff, right?
+  // And also, how are You going to manage/share the stencil buffer itself?
+  // How many different fbos would that require? Have fun!
+  // PS. I'm just not huge fan of this design, it's actually not THAT bad in practice.
+  public readonly stencilConsts = {
+    skin: 1,
+    hair: 2,
+  };
+
   /** Convert spherical->cartesian */
   public sphericalToCartesian(sphericalCoords: SphericalToCarthesian) {
     const pos = sphericalToCartesian(sphericalCoords.posPhi, sphericalCoords.posTheta, true);
@@ -81,7 +92,7 @@ export class Config {
         near: 0.1, far: 20,
       },
     },
-    showDebugView: true,
+    showDebugView: false,
   };
   // </editor-fold> // END: SHADOWS
 
@@ -118,7 +129,9 @@ export class Config {
     posPhi: -93, // horizontal [dgr]
     posTheta: 55, // verical [dgr]
     posRadius: SHADOWS_ORTHO_SIZE,
-    color: arrayToVec3([54, 6, 14], true),
+    // SSS blur pass
+    blurWidth: 60.0,
+    blurStrength: 0.8,
     // will reuse target & projection settings from shadows - safer this way..
   };
   // </editor-fold> // END: LIGHTS

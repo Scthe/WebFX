@@ -5,7 +5,7 @@ import {Config} from 'Config';
 import {Device} from 'Device';
 import {FrameResources} from '../FrameResources';
 import {Dimensions} from 'gl-utils';
-import {Ecs} from 'ecs';
+import {Ecs, CameraSettings} from 'ecs';
 
 export interface FrameCamera {
   position: vec3;
@@ -13,6 +13,7 @@ export interface FrameCamera {
   // projectionMatrix: mat4;
   // viewProjectionMatrix: mat4;
   getMVP: (modelMatrix: mat4) => mat4;
+  settings: CameraSettings;
 }
 
 export interface PassExecuteParams {

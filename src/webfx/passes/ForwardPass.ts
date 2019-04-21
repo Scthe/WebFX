@@ -11,7 +11,7 @@ import {MaterialComponent, TransformComponent, MeshComponent} from 'ecs';
 
 interface ForwardPassData {
   getLightShadowMvp: (modelMat: mat4) => mat4;
-  getSSS_VP: () => mat4,
+  getSSS_VP: () => mat4;
   shadowLightPosition: vec3;
   sssPosition: vec3;
 }
@@ -64,12 +64,6 @@ export class ForwardPass {
         'u_sssDepthTex': frameRes.sssDepthTex,
         'u_sssPosition': passData.sssPosition,
         'u_sssMatrix_VP': passData.getSSS_VP(),
-        'u_sssLightColor': cfg.lightSSS.color,
-        // 'u_fresnelExponent': material.fresnelExponent,
-        // 'u_fresnelMultiplier': material.fresnelMultiplier,
-        // 'u_fresnelColor': arrayToVec3(material.fresnelColor, true),
-        // 'u_ssColor1': arrayToVec3(material.ssColor1, true),
-        // 'u_ssColor2': arrayToVec3(material.ssColor2, true),
         // lights:
         u_lightAmbient: Float32Array.from([
           cfg.lightAmbient.color[0],
@@ -80,7 +74,7 @@ export class ForwardPass {
         ...this.lightUniforms('light0', cfg.light0),
         ...this.lightUniforms('light1', cfg.light1),
         ...this.lightUniforms('light2', cfg.light2),
-      }, false);
+      }, true);
 
       device.renderMesh(mesh);
     }, MaterialComponent, TransformComponent, MeshComponent);
