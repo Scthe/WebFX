@@ -1,7 +1,7 @@
-import {mat4, create as Mat4} from 'gl-mat4';
+import {mat4} from 'gl-mat4';
 import {scale as scaleV3, vec3} from 'gl-vec3';
 import {setUniforms, sphericalToCartesian} from 'gl-utils';
-import {DrawParams, DepthTest, CullingMode} from 'gl-utils/DrawParams';
+import {DrawParams, DepthTest, CullingMode, StencilOperation} from 'gl-utils/DrawParams';
 
 import {LightCfg} from 'Config';
 import {FboBindType} from 'resources';
@@ -29,11 +29,16 @@ export class ForwardPass {
     const dp = new DrawParams();
     dp.depth.test = DepthTest.IfLessOrEqual;
     dp.culling = CullingMode.None;
+    dp.stencil.referenceValue = cfg.stencilConsts.skin;
+    dp.stencil.writeBytes = cfg.stencilConsts.skin;
+    dp.stencil.front.opPass = StencilOperation.Replace;
+    dp.stencil.back.opPass = StencilOperation.Replace;
     device.setState(dp);
 
-    frameRes.forwardFbo.bind(gl, FboBindType.Draw, true);
+    const fbo = frameRes.forwardFbo;
+    fbo.bind(gl, FboBindType.Draw, true);
     gl.viewport(0.0, 0.0, viewport.width, viewport.height);
-    gl.clear(gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT);
+    gl.clear(gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT | gl.STENCIL_BUFFER_BIT);
 
     ecs.forEachEntity((_entityId, material, tfx, mesh) => {
       const modelMatrix = tfx.modelMatrix;

@@ -41,18 +41,13 @@ export class Config {
 
   public readonly clearColor: vec3 = hexToVec3('#5d5d5d'); // [43a7a9, a0a0a0] // TODO final value
   public readonly clearDepth: number = 1.0;
+  public readonly clearStencil: number = 0;
   public readonly resizeUpdateFreq: number = 1000; // ms
   public readonly showDebugPositions = false;
 
-  // ugh.... ?!
-  // sure, global stencil bits table. That never went wrong. Genius!
-  // It's not like we have to actually think about this stuff, right?
-  // And also, how are You going to manage/share the stencil buffer itself?
-  // How many different fbos would that require? Have fun!
-  // PS. I'm just not huge fan of this design, it's actually not THAT bad in practice.
   public readonly stencilConsts = {
-    skin: 1,
-    hair: 2,
+    skin: 1 << 0,
+    hair: 1 << 1,
   };
 
   /** Convert spherical->cartesian */
@@ -132,6 +127,7 @@ export class Config {
     // SSS blur pass
     blurWidth: 60.0,
     blurStrength: 0.8,
+    blurFollowSurface: false, // slight changes for incident angles ~90dgr
     // will reuse target & projection settings from shadows - safer this way..
   };
   // </editor-fold> // END: LIGHTS

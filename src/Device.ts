@@ -103,7 +103,7 @@ export class Device {
     }
 
     // we don't have to bind anything. Or rather, we use what was bound prevoiusly.
-    // Wonder if it's stanadarized?
+    // Wonder if it's standarized?
     const triCnt = 1;
     gl.drawArrays(gl.TRIANGLES, 0, triCnt * 3);
   }

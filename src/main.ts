@@ -23,6 +23,7 @@ import {
   FinalPass,
   TonemappingPass,
   SSSBlurPass,
+  LinearDepthPass,
 } from 'webfx/passes';
 
 
@@ -65,6 +66,7 @@ const initialize = async (): Promise<GlobalVariables> => {
     'OES_texture_float_linear',
   ]);
   globals.gl.clearDepth(cfg.clearDepth);
+  globals.gl.clearStencil(cfg.clearStencil);
   globals.device = new Device(globals.gl);
 
   globals.ecs = new Ecs();
@@ -161,6 +163,10 @@ const renderScene = (globals: GlobalVariables) => {
     sssPosition: sssPos,
   });
 
+  // linearize depth
+  const linearDepthPass = new LinearDepthPass();
+  linearDepthPass.execute(params);
+
   // SSS blur
   // just blur everything at once, ignore light leaking between eyes/face
   const sssBlurPass = new SSSBlurPass();
@@ -170,7 +176,7 @@ const renderScene = (globals: GlobalVariables) => {
     isFirstPass: true,
   });
   sssBlurPass.execute(params, {
-    fbo: frameResources.forwardFbo_onlyColor,
+    fbo: frameResources.forwardFbo,
     sourceTexture: frameResources.sssBlurPingPongTex,
     isFirstPass: false,
   });

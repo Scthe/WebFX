@@ -34,7 +34,7 @@ export class FinalPass {
       'u_edgeThresholdMin': cfg.postfx.edgeThresholdMin,
     }, true);
 
-    device.renderFullscreenQuad(true);
+    device.renderFullscreenQuad();
 
     if (cfg.showDebugPositions) {
       this.debugPositions(params);

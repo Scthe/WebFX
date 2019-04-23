@@ -393,6 +393,11 @@ float4 SSSSBlurPS(
   float sssStrength,
   bool sssFollowSurface
 ) {
+  // NOTE: UE4 calcualtes some of params on CPU, see:
+  // Engine/Source/Runtime/Renderer/Private/PostProcess/PostProcessSubsurface.cpp
+  // Engine/Shaders/Private/PostProcessSubsurface.usf
+  // Engine/Shaders/Private/SeparableSSS.ush
+
   // Fetch color of current pixel:
   float4 colorM = SSSSSamplePoint(colorTex, texcoord);
 
@@ -425,10 +430,13 @@ float4 SSSSBlurPS(
       // If the difference in depth is huge, we lerp color back to "colorM":
       float depth = SSSSS_sampleDepthLinear(depthTex, offset);
 
-      float s = SSSSSaturate(
-        abs(depthM - depth) / (distanceToProjectionWindow * (maxOffsetMm / sssWidth))
-      );
-      s = min(1.0, s * 1.5); // custom / user definable scaling
+      // Original:
+      // float s = SSSSSaturate(
+        // abs(depthM - depth) / (distanceToProjectionWindow * (maxOffsetMm / sssWidth))
+      // );
+      // s = min(1.0, s * 1.5); // custom / user definable scaling
+      // UE4:
+      float s = saturate(12.0f / 400.0f * sssWidth * abs(depthM - depth));
 
       color.rgb = SSSSLerp(color.rgb, colorM.rgb, s);
     }

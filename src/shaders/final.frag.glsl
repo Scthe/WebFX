@@ -41,7 +41,6 @@ vec3 doFxaa (PixelInfo pixelInfo) {
   if (u_edgeThreshold == 0.0) {
     color = texture(u_tonemapped, pixelInfo.posTextureSpace);
   } else {
-    // TODO FXAA should be on tonemapped result!
     color = FxaaPixelShader(
       pixelInfo.posTextureSpace, // in [0-1]
       u_tonemapped,
@@ -62,9 +61,6 @@ vec3 doFxaa (PixelInfo pixelInfo) {
 void main() {
   color1 = vec4(1.0f, 0, 1.0f, 1.0f);
   PixelInfo pixelInfo = createPixelInfo();
-
-  // color = tonemapReinhard(color);
-  // outColor1 = vec4(doGamma(color, u_gamma), 1.0);
 
   vec3 tex = doFxaa(pixelInfo);
   color1 = vec4(doGamma(tex, u_gamma), 1.0f);

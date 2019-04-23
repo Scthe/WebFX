@@ -93,8 +93,9 @@ export class UISystem {
 
     dir.add(this.cfg.lightSSS, 'posPhi', -179, 179).step(1).name('Position phi');
     dir.add(this.cfg.lightSSS, 'posTheta', 15, 165).step(1).name('Position th');
-    dir.add(this.cfg.lightSSS, 'blurWidth', 1, 100).name('SSS width');
-    dir.add(this.cfg.lightSSS, 'blurStrength', 0.0, 1.0).name('SSS strength');
+    dir.add(this.cfg.lightSSS, 'blurWidth', 1, 100).name('Blur width');
+    dir.add(this.cfg.lightSSS, 'blurStrength', 0.0, 1.0).name('Blur strength');
+    dir.add(this.cfg.lightSSS, 'blurFollowSurface').name('Blur follow surface');
   }
 
   private addShadowsFolder (gui: GUI) {

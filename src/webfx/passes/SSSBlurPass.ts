@@ -1,7 +1,6 @@
-import {vec2, fromValues as Vec2} from 'gl-vec2';
-import {mat4, create as Mat4, ortho, lookAt} from 'gl-mat4';
-import {setUniforms, AXIS_Y, getMVP} from 'gl-utils';
-import {DrawParams, DepthTest, CullingMode} from 'gl-utils/DrawParams';
+import {fromValues as Vec2} from 'gl-vec2';
+import {setUniforms} from 'gl-utils';
+import {DrawParams, DepthTest, CullingMode, StencilTest} from 'gl-utils/DrawParams';
 
 import {FboBindType, Fbo, Texture} from 'resources';
 import {PassExecuteParams} from './structs';
@@ -18,7 +17,7 @@ const DIRECTION_VERTICAL = Vec2(0, 1);
 export class SSSBlurPass {
 
   execute (params: PassExecuteParams, data: SSSBlurPassData) {
-    const {cfg, device, frameRes, camera} = params;
+    const {cfg, device, frameRes} = params;
     const {gl} = device;
     const {fbo, isFirstPass, sourceTexture} = data;
 
@@ -36,15 +35,17 @@ export class SSSBlurPass {
     dp.depth.write = false;
     dp.depth.test = DepthTest.AlwaysPass;
     dp.culling = CullingMode.None;
-    // TODO stencil
+    dp.stencil.referenceValue = cfg.stencilConsts.skin;
+    dp.stencil.compareMask = cfg.stencilConsts.skin;
+    dp.stencil.front.test = StencilTest.IfRefIsEqualCurrent;
+    dp.stencil.back.test = StencilTest.IfRefIsEqualCurrent;
     device.setState(dp);
 
     setUniforms(device, shader, {
       'u_sourceTex': sourceTexture,
-      'u_depthPerspTex': frameRes.forwardDepthTex,
-      'u_nearAndFar': Vec2(camera.settings.zNear, camera.settings.zFar),
+      'u_linearDepthTex': frameRes.linearDepthTex,
       'u_sssDirection': this.getDirection(isFirstPass),
-      'u_sssFollowSurface': 0,
+      'u_sssFollowSurface': cfg.lightSSS.blurFollowSurface ? 1 : 0,
       'u_sssFovy': this.getFovY(params), // in dgr?
       'u_sssWidth': cfg.lightSSS.blurWidth,
       'u_sssStrength': cfg.lightSSS.blurStrength,

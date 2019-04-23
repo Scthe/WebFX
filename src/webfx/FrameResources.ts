@@ -23,14 +23,17 @@ export class FrameResources {
   public shadowDepthFbo: Fbo;
   public shadowShader: Shader;
   // SSS - forward scattering
-  public sssDepthTex: Texture;
+  public sssDepthTex: Texture; // actually, why not put this in alpha of forwardColor? just mask color write channels
   public sssDepthFbo: Fbo;
+  // linear depth - will allow to use normal depth texture as stencil fbo attachment
+  public linearDepthShader: Shader;
+  public linearDepthTex: Texture;
+  public linearDepthFbo: Fbo;
   // forward
   public meshShader: Shader;
   public forwardDepthTex: Texture;
   public forwardColorTex: Texture;
   public forwardFbo: Fbo;
-  public forwardFbo_onlyColor: Fbo; // needed for SSSSS blur
   // SSS
   public sssBlurShader: Shader;
   public sssBlurPingPongTex: Texture;
@@ -61,6 +64,7 @@ export class FrameResources {
     this.destroyResizableResources(device.gl);
 
     this.initializeForwardPassResources(device, d);
+    this.initializeLinearDepthPassResources(device, d);
     this.initializeTonemappingPassResources(device, d);
   }
 
@@ -93,6 +97,10 @@ export class FrameResources {
       require('shaders/fullscreenQuad.vert.glsl'),
       require('shaders/sssBlur.frag.glsl'),
     );
+    this.linearDepthShader = new Shader(gl,
+      require('shaders/fullscreenQuad.vert.glsl'),
+      require('shaders/linearDepth.frag.glsl'),
+    );
   }
 
   private initializeForwardPassResources (device: Device, d: Dimensions) {
@@ -100,8 +108,8 @@ export class FrameResources {
 
     this.forwardDepthTex = this.createTexture(
       device,
-      gl.DEPTH_COMPONENT16, d,
-      this.createTextureOpts(gl, gl.DEPTH_COMPONENT16)
+      gl.DEPTH24_STENCIL8, d,
+      this.createTextureOpts(gl, gl.DEPTH24_STENCIL8)
     );
     this.forwardColorTex = this.createTexture(
       device,
@@ -112,9 +120,6 @@ export class FrameResources {
       this.forwardDepthTex,
       this.forwardColorTex,
     ]);
-    this.forwardFbo_onlyColor = new Fbo(gl, [
-      this.forwardColorTex,
-    ]);
 
     // also SSS here, cause needs to be EXACT same
     this.sssBlurPingPongTex = this.createTexture(
@@ -123,7 +128,21 @@ export class FrameResources {
       this.createTextureOpts(gl, gl.RGBA32F)
     );
     this.sssBlurPingPongFbo = new Fbo(gl, [
+      this.forwardDepthTex, // used to get stencil values, we will read depth from linear depth texture
       this.sssBlurPingPongTex,
+    ]);
+  }
+
+  private initializeLinearDepthPassResources (device: Device, d: Dimensions) {
+    const {gl} = device;
+
+    this.linearDepthTex = this.createTexture(
+      device,
+      gl.R32F, d,
+      this.createTextureOpts(gl, gl.R32F)
+    );
+    this.linearDepthFbo = new Fbo(gl, [
+      this.linearDepthTex,
     ]);
   }
 
@@ -190,9 +209,11 @@ export class FrameResources {
 
   private destroyResizableResources(gl: Webgl) {
     if (this.forwardFbo) { this.forwardFbo.destroy(gl); }
-    if (this.forwardFbo_onlyColor) { this.forwardFbo_onlyColor.destroy(gl); }
     if (this.forwardDepthTex) { this.forwardDepthTex.destroy(gl); }
     if (this.forwardColorTex) { this.forwardColorTex.destroy(gl); }
+
+    if (this.linearDepthFbo) { this.linearDepthFbo.destroy(gl); }
+    if (this.linearDepthTex) { this.linearDepthTex.destroy(gl); }
 
     if (this.sssBlurPingPongFbo) { this.sssBlurPingPongFbo.destroy(gl); }
     if (this.sssBlurPingPongTex) { this.sssBlurPingPongTex.destroy(gl); }

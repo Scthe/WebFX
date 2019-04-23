@@ -4,8 +4,7 @@ precision highp int;
 precision highp sampler2D;
 
 uniform sampler2D u_sourceTex;
-uniform sampler2D u_depthPerspTex; // depth in perspective projection, will be converted to linear later
-uniform vec2 u_nearAndFar;
+uniform sampler2D u_linearDepthTex;
 uniform float u_sssWidth;
 // Direction of the blur:
 //   - First pass:   float2(1.0, 0.0)
@@ -26,8 +25,7 @@ layout(location = 0) out vec4 outColor1;
 @import ./_utils;
 
 float SSSSS_sampleDepthLinear (sampler2D depthTex, vec2 texcoord) {
-  float depth = texture(u_depthPerspTex, texcoord).r;
-  return linearizeDepth(depth, u_nearAndFar);
+  return texture(u_linearDepthTex, texcoord).r;
 }
 
 #define SSSS_GLSL_3 1
@@ -39,7 +37,7 @@ void main() {
   vec4 result = SSSSBlurPS(
     posTextureSpace, // float2 texcoord,
     u_sourceTex, // SSSSTexture2D colorTex,
-    u_depthPerspTex, // SSSSTexture2D depthTex,
+    u_linearDepthTex, // SSSSTexture2D depthTex,
     u_sssWidth, // float sssWidth,
     u_sssDirection, // float2 dir
     u_sssFovy, u_sssStrength, u_sssFollowSurface != 0 // replaced macros
