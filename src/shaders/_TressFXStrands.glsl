@@ -33,7 +33,9 @@ struct TressFXVertex {
 };
 
 
-TressFXVertex getExpandedTressFXVert(uint vertexId, vec3 eye, mat4 viewProj) {
+TressFXVertex getExpandedTressFXVert(
+  uint vertexId, vec3 eye, mat4 mMat, mat4 vpMat
+) {
   // Access the current line segment
   // (We will move vertices left or right by hair thickness, while odd vertices are moved left, even are moved right.
   // And by 'left' and 'right' we mean according to normal&tangent.
@@ -44,29 +46,37 @@ TressFXVertex getExpandedTressFXVert(uint vertexId, vec3 eye, mat4 viewProj) {
   ivec2 vertexSamplePos = getVertexPositionCoords(index);
   vec3 v = texelFetch(u_vertexPositionsBuffer, vertexSamplePos, 0).xyz;
   vec3 t = texelFetch(u_vertexTangentsBuffer, vertexSamplePos, 0).xyz;
+  v = (mMat * vec4(v, 1.0)).xyz; // transform to world space
+  t = normalize(t); // not needed for cross, but useful for debugging
 
   // Get hair strand thickness
-  float vertex_position = getVertexInStrandPercentage(index);
+  float vertex_position = getVertexInStrandPercentage(index); // 1 := root, 0 := tip
   float ratio = mix(u_thinTip, 1.0, vertex_position);
+  // float ratio = 1.0;
 
   // Calculate right and projected right vectors
   vec3 towardsCamera = safeNormalize(v - eye);
-  vec3 right = safeNormalize(cross(t, towardsCamera)); // TODO verify is ok
+  vec3 right = safeNormalize(cross(t, towardsCamera));
+
+  // debug
+  // v = v + t * (u_thinTip * 0.1);
+  // v = v + towardsCamera * (u_thinTip * 0.1);
+  // v = v + right * (u_thinTip * 0.1);
 
   // Calculate the negative and positive offset screenspace positions
   vec4 hairEdgePositions[2]; // 0 is for odd vertexId, 1 is positive even vertexId
   vec3 thicknessVector = right * ratio * u_fiberRadius;
   hairEdgePositions[0] = vec4(v - thicknessVector, 1.0); // position 'left'
   hairEdgePositions[1] = vec4(v + thicknessVector, 1.0); // position 'right'
-  hairEdgePositions[0] = viewProj * hairEdgePositions[0];
-  hairEdgePositions[1] = viewProj * hairEdgePositions[1];
+  hairEdgePositions[0] = vpMat * hairEdgePositions[0];
+  hairEdgePositions[1] = vpMat * hairEdgePositions[1];
 
   // Write output data
   TressFXVertex result;
 	bool isOdd = (vertexId & 0x01u) > 0u;
   result.position = (isOdd ? hairEdgePositions[0] : hairEdgePositions[1]);
   {
-    vec2 proj_right = (viewProj * vec4(right, 0)).xy;
+    vec2 proj_right = (vpMat * vec4(right, 0)).xy;
     proj_right = safeNormalize(proj_right);
 
     float fDirIndex = isOdd ? -1.0 : 1.0;

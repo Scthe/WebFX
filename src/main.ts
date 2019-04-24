@@ -1,7 +1,7 @@
 import {mat4, create as Mat4} from 'gl-mat4';
 import {copy as copyV3} from 'gl-vec3';
 import {copy as copyV2} from 'gl-vec2';
-import {createWebGl2Context, Dimensions, getMVP} from 'gl-utils';
+import {createWebGl2Context, Dimensions, getMVP, getVP} from 'gl-utils';
 
 import {Config} from 'Config';
 import {Device} from 'Device';
@@ -24,6 +24,7 @@ import {
   TonemappingPass,
   SSSBlurPass,
   LinearDepthPass,
+  TfxPass,
 } from 'webfx/passes';
 
 
@@ -124,6 +125,7 @@ const createRenderParams = (globals: GlobalVariables): PassExecuteParams => {
         controller.viewMatrix,
         camera.perspectiveMatrix
       ),
+      viewProjectionMatrix: getVP(controller.viewMatrix, camera.perspectiveMatrix),
       position: controller.position,
       settings: camera.settings,
     }
@@ -163,6 +165,9 @@ const renderScene = (globals: GlobalVariables) => {
     sssPosition: sssPos,
   });
 
+  const tfxPass = new TfxPass();
+  tfxPass.execute(params);
+
   // linearize depth
   const linearDepthPass = new LinearDepthPass();
   linearDepthPass.execute(params);
@@ -180,11 +185,6 @@ const renderScene = (globals: GlobalVariables) => {
     sourceTexture: frameResources.sssBlurPingPongTex,
     isFirstPass: false,
   });
-
-  // const drawParams = createWebFxDrawParams(globals);
-  // globals.webfx.beginScene(drawParams);
-  // globals.webfx.renderMeshes(drawParams);
-  // globals.webfx.renderHair(drawParams);
 
   // color grading + tonemapping
   const tonemappingPass = new TonemappingPass();

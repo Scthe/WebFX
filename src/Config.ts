@@ -59,6 +59,7 @@ export class Config {
   // <editor-fold> CAMERA
   public readonly camera = {
     position: Vec3(0, 2.5, 5),
+    // position: Vec3(0, 4, 2), // closeup on hair
     rotation: Vec2(0, 0), // radians
     settings: {
       fovDgr: 75,
@@ -125,7 +126,7 @@ export class Config {
     posTheta: 55, // verical [dgr]
     posRadius: SHADOWS_ORTHO_SIZE,
     // SSS blur pass
-    blurWidth: 60.0,
+    blurWidth: 25.0,
     blurStrength: 0.8,
     blurFollowSurface: false, // slight changes for incident angles ~90dgr
     // will reuse target & projection settings from shadows - safer this way..

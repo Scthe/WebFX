@@ -2,7 +2,8 @@
 precision highp float;
 precision highp int;
 
-uniform mat4 u_MVP;
+uniform mat4 u_mMat;
+uniform mat4 u_vpMat;
 uniform vec3 u_cameraPosition;
 uniform int u_numVerticesPerStrand;
 uniform vec2 u_viewportSize;
@@ -21,7 +22,7 @@ layout(location=0) in vec3 in_Position;
 
 void main() {
   TressFXVertex tressfxVert = getExpandedTressFXVert(
-    uint(gl_VertexID), u_cameraPosition, u_MVP
+    uint(gl_VertexID), u_cameraPosition, u_mMat, u_vpMat
   );
   gl_Position = tressfxVert.position;
 }

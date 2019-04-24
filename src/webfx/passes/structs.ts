@@ -11,7 +11,7 @@ export interface FrameCamera {
   position: vec3;
   // viewMatrix: mat4;
   // projectionMatrix: mat4;
-  // viewProjectionMatrix: mat4;
+  viewProjectionMatrix: mat4;
   getMVP: (modelMatrix: mat4) => mat4;
   settings: CameraSettings;
 }

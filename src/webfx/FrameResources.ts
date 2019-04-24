@@ -34,6 +34,8 @@ export class FrameResources {
   public forwardDepthTex: Texture;
   public forwardColorTex: Texture;
   public forwardFbo: Fbo;
+  // TressFX
+  public tfxShader: Shader;
   // SSS
   public sssBlurShader: Shader;
   public sssBlurPingPongTex: Texture;
@@ -100,6 +102,10 @@ export class FrameResources {
     this.linearDepthShader = new Shader(gl,
       require('shaders/fullscreenQuad.vert.glsl'),
       require('shaders/linearDepth.frag.glsl'),
+    );
+    this.tfxShader = new Shader(gl,
+      require('shaders/tfx.vert.glsl'),
+      require('shaders/tfx.frag.glsl'),
     );
   }
 

@@ -102,7 +102,7 @@ const writeTangentsToTexture = (
     vertexPositionsBuffer[idx * 4 + 2]
   );
   const setTangent = (idx: number, t: vec3) => {
-    tangents[idx * 4] = t[0];
+    tangents[idx * 4 + 0] = t[0];
     tangents[idx * 4 + 1] = t[1];
     tangents[idx * 4 + 2] = t[2];
   };

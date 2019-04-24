@@ -4,4 +4,6 @@ export * from './FinalPass';
 export * from './TonemappingPass';
 export * from './SSSBlurPass';
 export * from './LinearDepthPass';
+export * from './TfxPass';
+
 export * from './structs';

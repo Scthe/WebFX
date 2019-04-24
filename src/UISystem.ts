@@ -1,7 +1,7 @@
 import {GUI} from 'dat.gui';
 import {Config, LightCfg, ColorGradingProp, ColorGradingPerRangeSettings} from 'Config';
-import {MaterialComponent, Ecs} from 'ecs';
-import {ENTITY_SINTEL, ENTITY_SINTEL_EYES} from 'webfx';
+import {MaterialComponent, Ecs, TfxComponent} from 'ecs';
+import {ENTITY_SINTEL, ENTITY_SINTEL_EYES, ENTITY_TRESSFX} from 'webfx';
 import {TonemappingModesList, TonemappingMode} from 'webfx/passes/TonemappingPass';
 
 interface UiOpts<T> {
@@ -59,6 +59,7 @@ export class UISystem {
     this.addMaterialFolder(this.gui, ecs, 'Sintel', ENTITY_SINTEL);
     this.addMaterialFolder(this.gui, ecs, 'Sintel_eyes', ENTITY_SINTEL_EYES);
     this.addSSS_General(this.gui);
+    this.addTfxFolder(this.gui, ecs, 'TressFX', ENTITY_TRESSFX);
     this.addAmbientLightFolder(this.gui);
     this.addLightFolder(this.gui, this.cfg.light0, 'Light 0');
     this.addLightFolder(this.gui, this.cfg.light1, 'Light 1');
@@ -78,7 +79,7 @@ export class UISystem {
     const mat = ecs.getComponent(entity, MaterialComponent);
 
     const dir = gui.addFolder(folderName);
-    dir.open();
+    // dir.open();
 
     dir.add(mat, 'sssTransluency', 0.0, 1.0).name('SSS transluency');
     dir.add(mat, 'sssWidth', 0, 100).name('SSS width');
@@ -89,13 +90,25 @@ export class UISystem {
 
   private addSSS_General (gui: GUI) {
     const dir = gui.addFolder('SSS general / blur');
-    dir.open();
+    // dir.open();
 
     dir.add(this.cfg.lightSSS, 'posPhi', -179, 179).step(1).name('Position phi');
     dir.add(this.cfg.lightSSS, 'posTheta', 15, 165).step(1).name('Position th');
     dir.add(this.cfg.lightSSS, 'blurWidth', 1, 100).name('Blur width');
     dir.add(this.cfg.lightSSS, 'blurStrength', 0.0, 1.0).name('Blur strength');
     dir.add(this.cfg.lightSSS, 'blurFollowSurface').name('Blur follow surface');
+  }
+
+  private addTfxFolder (gui: GUI, ecs: Ecs, folderName: string, entityName: string) {
+    const entity = ecs.getByName(entityName);
+    if (entity === undefined) { throw `Did not found entity '${entityName}'`; }
+    const tfxComp = ecs.getComponent(entity, TfxComponent);
+
+    const dir = gui.addFolder(folderName);
+    dir.open();
+
+    dir.add(tfxComp, 'fiberRadius', 0.005, 0.05).name('Radius');
+    dir.add(tfxComp, 'thinTip', 0.0, 1.0).name('Thin tip');
   }
 
   private addShadowsFolder (gui: GUI) {

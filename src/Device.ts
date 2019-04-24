@@ -6,11 +6,12 @@ import {Dimensions, setUniforms} from 'gl-utils';
 import {DrawParams, applyDrawParams, DepthTest} from 'gl-utils/DrawParams';
 import {TextureBindingState, Shader} from 'resources';
 import {MeshComponent, TfxComponent} from 'ecs';
-import { generateSphere, createGpuShape } from 'gl-utils/shapes';
+import {generateSphere, createGpuShape} from 'gl-utils/shapes';
 
 
 interface TfxRenderParams {
-  mvp: mat4;
+  modelMat: mat4;
+  viewProjectionMat: mat4;
   cameraPosition: vec3;
   viewport: Dimensions;
 }
@@ -76,13 +77,16 @@ export class Device {
     const gl = this.gl;
 
     setUniforms(this, shader, {
-      'u_MVP': params.mvp,
+      'u_mMat': params.modelMat,
+      'u_vpMat': params.viewProjectionMat,
       'u_cameraPosition': params.cameraPosition,
+      // 'u_cameraPosition': Vec3(0, 4, 2),
       'u_viewportSize': Vec2(params.viewport.width, params.viewport.height),
       'u_numVerticesPerStrand': tfx.numVerticesPerStrand,
       'u_vertexPositionsBuffer': tfx.positionsTexture,
-      'u_fiberRadius': 0.2,
-      'u_thinTip': 0.5,
+      'u_vertexTangentsBuffer': tfx.tangentsTexture,
+      'u_fiberRadius': tfx.fiberRadius,
+      'u_thinTip': tfx.thinTip,
     }, false);
 
     // const totalVertices = this.tfxComponent.totalVertices;
