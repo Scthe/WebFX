@@ -85,3 +85,10 @@ float max4(vec4 v){ return max(v.w, max3(v.xyz)); }
 
 float min3(vec3 v){ return min(v.x, min(v.y, v.z)); }
 float min4(vec4 v){ return min(v.w, min3(v.xyz)); }
+
+/** returns something random */
+vec3 hash(vec3 a) {
+  a = fract(a * vec3(.8, .8, .8));
+  a += dot(a, a.yxz + 19.19);
+  return fract((a.xxy + a.yxx) * a.zyx);
+}

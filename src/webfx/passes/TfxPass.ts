@@ -3,6 +3,7 @@ import {DrawParams, DepthTest, CullingMode, StencilOperation} from 'gl-utils/Dra
 import {FboBindType} from 'resources';
 import {PassExecuteParams} from './structs';
 import {TransformComponent, TfxComponent} from 'ecs';
+import {setUniforms} from 'gl-utils';
 
 
 export class TfxPass {
@@ -28,6 +29,10 @@ export class TfxPass {
     gl.viewport(0.0, 0.0, viewport.width, viewport.height);
 
     ecs.forEachEntity((_entityId, tfx, transform) => {
+      setUniforms(device, shader, {
+        'u_displayMode': tfx.displayMode,
+      }, true);
+
       device.renderTressFx(tfx, shader, {
         modelMat: transform.modelMatrix,
         viewProjectionMat: camera.viewProjectionMatrix,

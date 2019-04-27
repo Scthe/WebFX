@@ -32,7 +32,7 @@ const createIndexBuffer = (gl: Webgl, tfxHeader: TfxFileHeader): IndexBuffer => 
   const idxCpu = Array(idxElements * 6).fill(0);
 
   let id = 0;
-  let iCount = 0;
+  let iCount = 0; // actually a vertices count
 
   for (let i = 0; i < tfxHeader.numHairStrands; i++) {
     for (let j = 0; j < tfxHeader.numVerticesPerStrand - 1; j++) {
@@ -46,6 +46,7 @@ const createIndexBuffer = (gl: Webgl, tfxHeader: TfxFileHeader): IndexBuffer => 
     }
     id++;
   }
+
   const idxData = Uint32Array.from(idxCpu);
   const indexBuffer = Buffer.fromData(gl,
     BufferType.IndexBuffer, BufferUsage.STATIC_DRAW,

@@ -86,15 +86,16 @@ export class Device {
       'u_vertexPositionsBuffer': tfx.positionsTexture,
       'u_vertexTangentsBuffer': tfx.tangentsTexture,
       'u_fiberRadius': tfx.fiberRadius,
-      'u_thinTip': tfx.thinTip,
-    }, false);
-
-    // const totalVertices = this.tfxComponent.totalVertices;
-    // gl.drawArrays(gl.TRIANGLES, 0, totalVertices);
+      'u_thinTip': 1 - tfx.thinTip,
+      // 'u_followHairs': tfx.followHairs,
+      'u_followHairSpreadRoot': tfx.followHairSpreadRoot,
+      'u_followHairSpreadTip': tfx.followHairSpreadTip,
+    }, true);
 
     const {indexGlType, indexBuffer, triangleCnt} = tfx.indices;
+    const vertexCount = triangleCnt * 3;
     indexBuffer.bind(gl);
-    gl.drawElements(gl.TRIANGLES, triangleCnt * 3, indexGlType, 0);
+    gl.drawElementsInstanced(gl.TRIANGLES, vertexCount, indexGlType, 0, tfx.followHairs);
   }
 
   renderFullscreenQuad (autoSetDrawParams = false): void {

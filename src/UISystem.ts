@@ -107,8 +107,18 @@ export class UISystem {
     const dir = gui.addFolder(folderName);
     dir.open();
 
-    dir.add(tfxComp, 'fiberRadius', 0.005, 0.05).name('Radius');
+    const displayModeDummy = createDummy(tfxComp, 'displayMode', [
+      { label: 'Final', value: 0, },
+      { label: 'Flat', value: 1, },
+      { label: 'Follow gr.', value: 2, },
+      { label: 'Root-tip %', value: 3, },
+    ]);
+    dir.add(displayModeDummy, 'displayMode', displayModeDummy.values).name('Display mode');
+    dir.add(tfxComp, 'fiberRadius', 0.001, 0.01).name('Radius');
     dir.add(tfxComp, 'thinTip', 0.0, 1.0).name('Thin tip');
+    dir.add(tfxComp, 'followHairs', 1, TfxComponent.MAX_FOLLOW_HAIRS_PER_GUIDE, 1).name('Follow hairs');
+    dir.add(tfxComp, 'followHairSpreadRoot', 0.0, 0.4).name('Spread root');
+    dir.add(tfxComp, 'followHairSpreadTip',  0.0, 0.4).name('Spread tip');
   }
 
   private addShadowsFolder (gui: GUI) {
