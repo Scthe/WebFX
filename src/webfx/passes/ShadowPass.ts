@@ -1,3 +1,4 @@
+import {vec2} from 'gl-vec2';
 import {vec3} from 'gl-vec3';
 import {mat4, create as Mat4, ortho, lookAt} from 'gl-mat4';
 import {setUniforms, AXIS_Y, getMVP} from 'gl-utils';
@@ -6,7 +7,8 @@ import {DrawParams, DepthTest, CullingMode} from 'gl-utils/DrawParams';
 import {FboBindType, Fbo} from 'resources';
 import {Config} from 'Config';
 import {PassExecuteParams} from './structs';
-import {MaterialComponent, TransformComponent, MeshComponent} from 'ecs';
+import {MaterialComponent, TransformComponent, MeshComponent, TfxComponent} from 'ecs';
+
 
 interface ShadowPassData {
   fbo: Fbo;
@@ -18,17 +20,14 @@ interface ShadowPassData {
 export class ShadowPass {
 
   execute (params: PassExecuteParams, data: ShadowPassData) {
-    const {cfg, device, ecs, frameRes} = params;
+    const {device} = params;
     const {gl} = device;
-    const {fbo, position} = data;
+    const {fbo, renderHair} = data;
 
     fbo.bind(gl, FboBindType.Draw, true);
 
     gl.clear(gl.DEPTH_BUFFER_BIT);
     gl.viewport(0.0, 0.0, fbo.dimensions[0], fbo.dimensions[1]);
-
-    const shader = frameRes.shadowShader;
-    shader.use(gl);
 
     const dp = new DrawParams();
     dp.depth.write = true; // most important line
@@ -36,6 +35,20 @@ export class ShadowPass {
     dp.culling = CullingMode.None; // see https://docs.microsoft.com/en-us/windows/desktop/DxTechArts/common-techniques-to-improve-shadow-depth-maps#back-face-and-front-face
     dp.colorWrite = [false, false, false, false]; // no RT anyway, just skip PS, pretty please!
     device.setState(dp);
+
+    this.renderMeshObjects(params, data);
+    if (renderHair) {
+      this.renderHairObjects(params, data, fbo.dimensions);
+    }
+  }
+
+  private renderMeshObjects(params: PassExecuteParams, data: ShadowPassData) {
+    const {cfg, device, ecs, frameRes} = params;
+    const {gl} = device;
+    const {position} = data;
+
+    const shader = frameRes.shadowShader;
+    shader.use(gl);
 
     ecs.forEachEntity((_entityId, _material, tfx, mesh) => {
       const modelMatrix = tfx.modelMatrix;
@@ -46,6 +59,27 @@ export class ShadowPass {
 
       device.renderMesh(mesh);
     }, MaterialComponent, TransformComponent, MeshComponent);
+  }
+
+  private renderHairObjects(params: PassExecuteParams, data: ShadowPassData, viewport: vec2) {
+    const {cfg, device, ecs, frameRes} = params;
+    const {gl} = device;
+    const {position} = data;
+
+    const shader = frameRes.shadowTfxShader;
+    shader.use(gl);
+
+    const vpMat = this.getLightShadowMvp(cfg, Mat4(), position);
+
+    // TODO hair radius multiplier for better shadows?
+    ecs.forEachEntity((_entityId, tfx, transform) => {
+      device.renderTressFx(tfx, shader, {
+        modelMat: transform.modelMatrix,
+        viewProjectionMat: vpMat,
+        cameraPosition: position,
+        viewport: {width: viewport[0], height: viewport[1]},
+      });
+    }, TfxComponent, TransformComponent);
   }
 
   public getLightShadowMvp = (cfg: Config, modelMatrix: mat4, lightPos: vec3) => {

@@ -4,7 +4,6 @@ precision highp int;
 precision highp usampler2D;
 // precision highp sampler2D;
 
-// uniform vec2 u_viewport;
 uniform vec3 u_cameraPosition;
 // material
 uniform usampler2D u_albedoTexture;
@@ -15,20 +14,16 @@ uniform float u_sssGain;
 uniform float u_sssStrength;
 uniform sampler2D u_sssDepthTex;
 uniform vec3 u_sssPosition;
-// uniform float u_fresnelExponent;
-// uniform float u_fresnelMultiplier;
-// uniform vec3 u_fresnelColor;
-// uniform vec3 u_ssColor1;
-// uniform vec3 u_ssColor2;
 // Shadow
 uniform sampler2D u_directionalShadowDepthTex;
 uniform vec4 u_directionalShadowCasterPosition; // [position.xyz, bias (negative if pcss)]
 uniform int u_directionalShadowSampleRadius;
-uniform mat4 u_sssMatrix_VP;
-uniform float u_sssFarPlane;
 uniform float u_maxShadowContribution;
 #define BIAS_FROM_UI (u_directionalShadowCasterPosition.w)
 #define USE_PCSS_SHADOWS (u_directionalShadowCasterPosition.w < 0.0f)
+// sss
+uniform float u_sssFarPlane;
+uniform mat4 u_sssMatrix_VP;
 // Lights
 uniform vec4 u_lightAmbient;
 uniform vec3 u_light0_Position;
@@ -37,9 +32,6 @@ uniform vec3 u_light1_Position;
 uniform vec4 u_light1_Color;
 uniform vec3 u_light2_Position;
 uniform vec4 u_light2_Color;
-
-/** rgb - baseColor, a - packedRoughnessMetallic */
-// uniform vec4 u_material;
 
 
 in vec3 v_Position;

@@ -166,7 +166,10 @@ const renderScene = (globals: GlobalVariables) => {
   });
 
   const tfxPass = new TfxPass();
-  tfxPass.execute(params);
+  tfxPass.execute(params, {
+    getLightShadowMvp: (modelMat: mat4) => shadowPass.getLightShadowMvp(config, modelMat, shadowPos),
+    shadowLightPosition: shadowPos,
+  });
 
   // linearize depth
   const linearDepthPass = new LinearDepthPass();

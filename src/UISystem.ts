@@ -112,6 +112,7 @@ export class UISystem {
       { label: 'Flat', value: 1, },
       { label: 'Follow gr.', value: 2, },
       { label: 'Root-tip %', value: 3, },
+      { label: 'Shadow', value: 4, },
     ]);
     dir.add(displayModeDummy, 'displayMode', displayModeDummy.values).name('Display mode');
     dir.add(tfxComp, 'fiberRadius', 0.001, 0.01).name('Radius');
@@ -133,7 +134,9 @@ export class UISystem {
     dir.add(techniqueDummy, 'usePCSS', techniqueDummy.values).name('Technique');
     dir.add(this.cfg.shadows, 'strength', 0.0, 1.0).name('Strength');
     dir.add(this.cfg.shadows, 'blurRadius', [0, 1, 2, 3, 4]).name('Blur radius');
-    dir.add(this.cfg.shadows, 'bias', 0.01, 0.1).name('Bias');
+    dir.add(this.cfg.shadows, 'bias', 0.001, 0.01).name('Bias');
+    dir.add(this.cfg.shadows, 'blurRadiusTfx', [0, 1, 2, 3, 4]).name('HAIR Blur radius');
+    dir.add(this.cfg.shadows, 'biasHairTfx', 0.001, 0.01).name('HAIR Bias');
 
     dir.add(this.cfg.shadows.directionalLight, 'posPhi', -179, 179).step(1).name('Position phi');
     dir.add(this.cfg.shadows.directionalLight, 'posTheta', 15, 165).step(1).name('Position th');

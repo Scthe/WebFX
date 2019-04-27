@@ -51,13 +51,13 @@ export class ForwardPass {
         'u_directionalShadowMatrix_MVP': passData.getLightShadowMvp(modelMatrix),
         'u_directionalShadowDepthTex': frameRes.shadowDepthTex,
         'u_maxShadowContribution': cfg.shadows.strength,
+        'u_directionalShadowSampleRadius': Math.floor(cfg.shadows.blurRadius),
         'u_directionalShadowCasterPosition': Float32Array.from([
           passData.shadowLightPosition[0],
           passData.shadowLightPosition[1],
           passData.shadowLightPosition[2],
           cfg.shadows.bias * (cfg.shadows.usePCSS ? -1 : 1),
         ]),
-        'u_directionalShadowSampleRadius': Math.floor(cfg.shadows.blurRadius),
         // material:
         'u_albedoTexture': material.albedoTex,
         'u_sssTransluency': material.sssTransluency,

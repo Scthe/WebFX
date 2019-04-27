@@ -75,10 +75,12 @@ export class Config {
     shadowmapSize: 1024,
     usePCSS: false,
     blurRadius: 4, // in pixels
-    bias: 0.050,
-    strength: 0.2,
+    bias: 0.005,
+    blurRadiusTfx: 1, // in pixels
+    biasHairTfx: 0.050,
+    strength: 1.0, // 0.2
     directionalLight: {
-      posPhi: 140, // horizontal [dgr]
+      posPhi: 125, // horizontal [dgr]
       posTheta: 45, // verical [dgr]
       posRadius: SHADOWS_ORTHO_SIZE, // verify with projection box below!!!
       target: Vec3(0, 2, 0),

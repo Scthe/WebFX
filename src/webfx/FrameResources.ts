@@ -22,6 +22,7 @@ export class FrameResources {
   public shadowDepthTex: Texture;
   public shadowDepthFbo: Fbo;
   public shadowShader: Shader;
+  public shadowTfxShader: Shader;
   // SSS - forward scattering
   public sssDepthTex: Texture; // actually, why not put this in alpha of forwardColor? just mask color write channels
   public sssDepthFbo: Fbo;
@@ -73,6 +74,10 @@ export class FrameResources {
   private initializeShaders (gl: Webgl) {
     this.shadowShader = new Shader(gl,
       require('shaders/shadow.vert.glsl'),
+      require('shaders/shadow.frag.glsl'),
+    );
+    this.shadowTfxShader = new Shader(gl,
+      require('shaders/shadow.tfx.vert.glsl'),
       require('shaders/shadow.frag.glsl'),
     );
     this.meshShader = new Shader(gl,

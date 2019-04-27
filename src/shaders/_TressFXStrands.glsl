@@ -1,7 +1,29 @@
 // https://github.com/Scthe/TressFX-OpenGL/blob/master/src/shaders/gl-tfx/lib/TressFXStrands.glsl
 
-
 #define TRESSFX_FLOAT_EPSILON 1e-7
+
+
+///////// uniforms
+
+uniform mat4 u_mMat;
+uniform mat4 u_vpMat;
+uniform vec3 u_cameraPosition;
+uniform vec2 u_viewportSize;
+// data buffers
+uniform sampler2D u_vertexPositionsBuffer;
+uniform sampler2D u_vertexTangentsBuffer;
+// tfx params
+uniform int u_numVerticesPerStrand;
+uniform float u_thinTip;
+uniform float u_fiberRadius;
+uniform uint u_followHairs;
+uniform float u_followHairSpreadRoot;
+uniform float u_followHairSpreadTip;
+
+const float EXPAND_PIXELS_FACTOR = 0.71;
+
+
+///////// END: uniforms
 
 
 ivec2 getVertexPositionCoords(uint offset) {
@@ -29,6 +51,8 @@ float getVertexInStrandPercentage (uint index) {
 struct TressFXVertex {
   vec4 position;
   vec4 tangent;
+  vec3 normal;
+  vec4 positionWorldSpace;
   float vertexRootToTipFactor; // 1 := root, 0: = tip
   // vec4 p0p1;
   // vec4 strandColor;
@@ -49,6 +73,25 @@ struct TressFXParams {
   float followHairSpreadRoot;
   float followHairSpreadTip;
 };
+
+TressFXParams createTfxParams() {
+  TressFXParams params;
+  params.vertexId = uint(gl_VertexID);
+  params.instanceId = uint(gl_InstanceID);
+  params.strandId = uint(gl_VertexID / 2 / u_numVerticesPerStrand);
+
+  params.eye = u_cameraPosition;
+  params.modelMat = u_mMat;
+  params.viewProjMat = u_vpMat;
+  params.viewportSize = u_viewportSize;
+
+  params.thinTip = u_thinTip;
+  params.fiberRadius = u_fiberRadius;
+  params.followHairSpreadRoot = u_followHairSpreadRoot;
+  params.followHairSpreadTip = u_followHairSpreadTip;
+
+  return params;
+}
 
 
 vec3 randomizeStrandPos(uint instanceId, uint strandId, uint rngFac) {
@@ -88,6 +131,7 @@ vec3 getFollowHairDisplacement (
   */
 }
 
+
 TressFXVertex getExpandedTressFXVert(TressFXParams params) {
   // Access the current line segment
   // We will move vertices left or right by hair thickness:
@@ -107,7 +151,6 @@ TressFXVertex getExpandedTressFXVert(TressFXParams params) {
   // Get hair strand thickness
   float vertex_position = getVertexInStrandPercentage(index); // 1 := root, 0 := tip
   float ratio = mix(params.thinTip, 1.0, vertex_position);
-  // float ratio = 1.0;
 
   v += getFollowHairDisplacement(params, vertex_position, t);
 
@@ -125,13 +168,17 @@ TressFXVertex getExpandedTressFXVert(TressFXParams params) {
   vec3 thicknessVector = right * ratio * params.fiberRadius;
   hairEdgePositions[0] = vec4(v - thicknessVector, 1.0); // position 'left'
   hairEdgePositions[1] = vec4(v + thicknessVector, 1.0); // position 'right'
-  hairEdgePositions[0] = params.viewProjMat * hairEdgePositions[0];
-  hairEdgePositions[1] = params.viewProjMat * hairEdgePositions[1];
 
   // Write output data
   TressFXVertex result;
 	bool isOdd = (params.vertexId & 0x01u) > 0u;
-  result.position = (isOdd ? hairEdgePositions[0] : hairEdgePositions[1]);
+  result.positionWorldSpace = (isOdd ? hairEdgePositions[0] : hairEdgePositions[1]); // may not be 100% accurate with fixes below
+  result.position = params.viewProjMat * result.positionWorldSpace;
+  result.tangent = vec4(t, ratio); // pack tangent + ThinTipRatio
+  result.vertexRootToTipFactor = vertex_position;
+  result.normal = towardsCamera; // ?! might as well
+
+  // some additional fixing
   {
     vec2 proj_right = (params.viewProjMat * vec4(right, 0)).xy;
     proj_right = safeNormalize(proj_right);
@@ -141,8 +188,6 @@ TressFXVertex getExpandedTressFXVert(TressFXParams params) {
     float w = isOdd ? hairEdgePositions[0].w : hairEdgePositions[1].w;
     result.position += fDirIndex * tmp * w;
   }
-  result.tangent = vec4(t, ratio); // pack tangent + ThinTipRatio
-  result.vertexRootToTipFactor = vertex_position;
 
   return result;
 }
