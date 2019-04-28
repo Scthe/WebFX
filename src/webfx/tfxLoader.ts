@@ -119,14 +119,18 @@ const writeTangentsToTexture = (
     setTangent(indexRootVertMaster, tangent);
 
     // vertex 1 through n-1
-    for (let i = 1; i < numVerticesPerStrand - 1; i++) {
+    for (let i = 1; i < numVerticesPerStrand; i++) {
       const vert_i_minus_1 = getVertexPos(indexRootVertMaster + i - 1);
       const vert_i         = getVertexPos(indexRootVertMaster + i);
       const vert_i_plus_1  = getVertexPos(indexRootVertMaster + i + 1);
 
       const tangent_pre = subtractNorm(vert_i, vert_i_minus_1);
       const tangent_next = subtractNorm(vert_i_plus_1, vert_i);
-      const tangent = addNorm(tangent_pre, tangent_next);
+      let tangent = addNorm(tangent_pre, tangent_next);
+      // fix the tips, we also changed for-loop range to be bigger
+      if (i === numVerticesPerStrand - 1) {
+        tangent = tangent_pre;
+      }
 
       setTangent(indexRootVertMaster + i, tangent);
     }

@@ -3,10 +3,11 @@ import {vec3} from 'gl-vec3';
 import {fromValues as Vec2} from 'gl-vec2';
 
 import {Dimensions, setUniforms} from 'gl-utils';
+import {generateSphere, createGpuShape} from 'gl-utils/shapes';
 import {DrawParams, applyDrawParams, DepthTest} from 'gl-utils/DrawParams';
 import {TextureBindingState, Shader} from 'resources';
 import {MeshComponent, TfxComponent} from 'ecs';
-import {generateSphere, createGpuShape} from 'gl-utils/shapes';
+import {Config} from 'Config';
 
 
 interface TfxRenderParams {
@@ -14,6 +15,8 @@ interface TfxRenderParams {
   viewProjectionMat: mat4;
   cameraPosition: vec3;
   viewport: Dimensions;
+  cfg: Config;
+  radiusMultiplier: number;
 }
 
 
@@ -80,12 +83,13 @@ export class Device {
       'u_mMat': params.modelMat,
       'u_vpMat': params.viewProjectionMat,
       'u_cameraPosition': params.cameraPosition,
+      'u_centerOfGravity': params.cfg.sintel.centerOfGravity,
       // 'u_cameraPosition': Vec3(0, 4, 2),
       'u_viewportSize': Vec2(params.viewport.width, params.viewport.height),
       'u_numVerticesPerStrand': tfx.numVerticesPerStrand,
       'u_vertexPositionsBuffer': tfx.positionsTexture,
       'u_vertexTangentsBuffer': tfx.tangentsTexture,
-      'u_fiberRadius': tfx.fiberRadius,
+      'u_fiberRadius': tfx.fiberRadius * params.radiusMultiplier,
       'u_thinTip': 1 - tfx.thinTip,
       // 'u_followHairs': tfx.followHairs,
       'u_followHairSpreadRoot': tfx.followHairSpreadRoot,

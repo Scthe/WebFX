@@ -72,13 +72,14 @@ export class Config {
 
   // <editor-fold> SHADOWS
   public readonly shadows = {
-    shadowmapSize: 1024,
+    shadowmapSize: 1024 * 2,
     usePCSS: false,
     blurRadius: 4, // in pixels
     bias: 0.005,
     blurRadiusTfx: 1, // in pixels
     biasHairTfx: 0.050,
-    strength: 1.0, // 0.2
+    hairTfxRadiusMultipler: 1.1,
+    strength: 0.7,
     directionalLight: {
       posPhi: 125, // horizontal [dgr]
       posTheta: 45, // verical [dgr]
@@ -197,6 +198,7 @@ export class Config {
     ssColor1: Vec3(0.146, 0.53, 0.178),
     ssColor2: Vec3(0.685, 0.273, 0.158),
     modelScale: 0.1,
+    centerOfGravity: Vec3(0, 3.0, 0), // used for calulating hair normals (remember, no cards!)
   };
   // </editor-fold> // END: SINTEL
 

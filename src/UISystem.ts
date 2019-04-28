@@ -115,11 +115,26 @@ export class UISystem {
       { label: 'Shadow', value: 4, },
     ]);
     dir.add(displayModeDummy, 'displayMode', displayModeDummy.values).name('Display mode');
-    dir.add(tfxComp, 'fiberRadius', 0.001, 0.01).name('Radius');
-    dir.add(tfxComp, 'thinTip', 0.0, 1.0).name('Thin tip');
+    dir.add(tfxComp, 'fiberRadius', 0.001, 0.015).name('Radius');
+    dir.add(tfxComp, 'thinTip', 0.0, 1.0, 0.01).name('Thin tip');
     dir.add(tfxComp, 'followHairs', 1, TfxComponent.MAX_FOLLOW_HAIRS_PER_GUIDE, 1).name('Follow hairs');
     dir.add(tfxComp, 'followHairSpreadRoot', 0.0, 0.4).name('Spread root');
     dir.add(tfxComp, 'followHairSpreadTip',  0.0, 0.4).name('Spread tip');
+
+    // material
+    const matRanges = { maxSpec: 500.0, minShift: -0.1, maxShift: 0.1, dShift: 0.001 };
+    const mat = tfxComp.material;
+    this.addColorController(dir, mat, 'albedo', 'Diffuse');
+
+    this.addColorController(dir, mat, 'specularColor1', 'Spec 1');
+    dir.add(mat, 'specularPower1',  0.0, matRanges.maxSpec).name('Spec exp 1');
+    dir.add(mat, 'specularStrength1',  0.0, 1.0).name('Spec str 1');
+    dir.add(mat, 'primaryShift',  matRanges.minShift, matRanges.maxShift, matRanges.dShift).name('Spec shift 1');
+
+    this.addColorController(dir, mat, 'specularColor2', 'Spec 2');
+    dir.add(mat, 'specularPower2',  0.0, matRanges.maxSpec).name('Spec exp 2');
+    dir.add(mat, 'specularStrength2',  0.0, 1.0).name('Spec str 2');
+    dir.add(mat, 'secondaryShift',  matRanges.minShift, matRanges.maxShift, matRanges.dShift).name('Spec shift 2');
   }
 
   private addShadowsFolder (gui: GUI) {
@@ -137,6 +152,7 @@ export class UISystem {
     dir.add(this.cfg.shadows, 'bias', 0.001, 0.01).name('Bias');
     dir.add(this.cfg.shadows, 'blurRadiusTfx', [0, 1, 2, 3, 4]).name('HAIR Blur radius');
     dir.add(this.cfg.shadows, 'biasHairTfx', 0.001, 0.01).name('HAIR Bias');
+    dir.add(this.cfg.shadows, 'hairTfxRadiusMultipler', 0.5, 3.0).name('HAIR Radius mul');
 
     dir.add(this.cfg.shadows.directionalLight, 'posPhi', -179, 179).step(1).name('Position phi');
     dir.add(this.cfg.shadows.directionalLight, 'posTheta', 15, 165).step(1).name('Position th');

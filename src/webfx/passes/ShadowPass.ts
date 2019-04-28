@@ -71,13 +71,14 @@ export class ShadowPass {
 
     const vpMat = this.getLightShadowMvp(cfg, Mat4(), position);
 
-    // TODO hair radius multiplier for better shadows?
     ecs.forEachEntity((_entityId, tfx, transform) => {
       device.renderTressFx(tfx, shader, {
         modelMat: transform.modelMatrix,
         viewProjectionMat: vpMat,
         cameraPosition: position,
         viewport: {width: viewport[0], height: viewport[1]},
+        cfg,
+        radiusMultiplier: cfg.shadows.hairTfxRadiusMultipler,
       });
     }, TfxComponent, TransformComponent);
   }

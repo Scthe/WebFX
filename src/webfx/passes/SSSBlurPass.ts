@@ -36,8 +36,7 @@ export class SSSBlurPass {
     dp.depth.test = DepthTest.AlwaysPass;
     dp.culling = CullingMode.None;
     dp.stencil.referenceValue = cfg.stencilConsts.skin;
-    dp.stencil.compareMask = cfg.stencilConsts.skin;
-    // dp.stencil.compareMask = cfg.stencilConsts.skin | cfg.stencilConsts.hair;
+    dp.stencil.compareMask = cfg.stencilConsts.skin | cfg.stencilConsts.hair;
     dp.stencil.front.test = StencilTest.IfRefIsEqualCurrent;
     dp.stencil.back.test = StencilTest.IfRefIsEqualCurrent;
     device.setState(dp);

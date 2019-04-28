@@ -11,6 +11,7 @@ flat out int v_hairInstanceId;
 out float v_vertexRootToTipFactor;
 out vec3 v_position;
 out vec3 v_normal;
+out vec3 v_tangent;
 out vec4 v_positionLightShadowSpace;
 
 
@@ -30,4 +31,5 @@ void main() {
   v_positionLightShadowSpace = u_directionalShadowMatrix_VP * tressfxVert.positionWorldSpace;
   v_position = tressfxVert.positionWorldSpace.xyz;
   v_normal = tressfxVert.normal;
+  v_tangent = tressfxVert.tangent;
 }

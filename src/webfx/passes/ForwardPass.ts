@@ -26,6 +26,15 @@ export class ForwardPass {
     const shader = frameRes.meshShader;
     shader.use(gl);
 
+    const fbo = frameRes.forwardFbo;
+    fbo.bind(gl, FboBindType.Draw, true);
+    gl.viewport(0.0, 0.0, viewport.width, viewport.height);
+
+    // prepare for clear - reset all write masks etc.
+    const dpClearAll = new DrawParams();
+    device.setState(dpClearAll);
+    gl.clear(gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT | gl.STENCIL_BUFFER_BIT);
+
     const dp = new DrawParams();
     dp.depth.test = DepthTest.IfLessOrEqual;
     dp.culling = CullingMode.None;
@@ -34,11 +43,6 @@ export class ForwardPass {
     dp.stencil.front.opPass = StencilOperation.Replace;
     dp.stencil.back.opPass = StencilOperation.Replace;
     device.setState(dp);
-
-    const fbo = frameRes.forwardFbo;
-    fbo.bind(gl, FboBindType.Draw, true);
-    gl.viewport(0.0, 0.0, viewport.width, viewport.height);
-    gl.clear(gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT | gl.STENCIL_BUFFER_BIT);
 
     ecs.forEachEntity((_entityId, material, tfx, mesh) => {
       const modelMatrix = tfx.modelMatrix;
@@ -70,22 +74,22 @@ export class ForwardPass {
         'u_sssPosition': passData.sssPosition,
         'u_sssMatrix_VP': passData.getSSS_VP(),
         // lights:
-        u_lightAmbient: Float32Array.from([
+        'u_lightAmbient': Float32Array.from([
           cfg.lightAmbient.color[0],
           cfg.lightAmbient.color[1],
           cfg.lightAmbient.color[2],
           cfg.lightAmbient.energy,
         ]),
-        ...this.lightUniforms('light0', cfg.light0),
-        ...this.lightUniforms('light1', cfg.light1),
-        ...this.lightUniforms('light2', cfg.light2),
+        ...ForwardPass.lightUniforms('light0', cfg.light0),
+        ...ForwardPass.lightUniforms('light1', cfg.light1),
+        ...ForwardPass.lightUniforms('light2', cfg.light2),
       }, true);
 
       device.renderMesh(mesh);
     }, MaterialComponent, TransformComponent, MeshComponent);
   }
 
-  private lightUniforms (prefix: string, lightCfg: LightCfg) {
+  public static lightUniforms (prefix: string, lightCfg: LightCfg) {
     const pos = sphericalToCartesian(lightCfg.posPhi, lightCfg.posTheta, true);
     scaleV3(pos, pos, lightCfg.posRadius);
 

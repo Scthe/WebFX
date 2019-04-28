@@ -9,6 +9,7 @@ uniform mat4 u_mMat;
 uniform mat4 u_vpMat;
 uniform vec3 u_cameraPosition;
 uniform vec2 u_viewportSize;
+uniform vec3 u_centerOfGravity;
 // data buffers
 uniform sampler2D u_vertexPositionsBuffer;
 uniform sampler2D u_vertexTangentsBuffer;
@@ -49,13 +50,11 @@ float getVertexInStrandPercentage (uint index) {
 
 
 struct TressFXVertex {
-  vec4 position;
-  vec4 tangent;
-  vec3 normal;
+  vec4 position; // projected
   vec4 positionWorldSpace;
+  vec3 normal;
+  vec3 tangent;
   float vertexRootToTipFactor; // 1 := root, 0: = tip
-  // vec4 p0p1;
-  // vec4 strandColor;
 };
 
 struct TressFXParams {
@@ -98,7 +97,7 @@ vec3 randomizeStrandPos(uint instanceId, uint strandId, uint rngFac) {
   vec3 seed = vec3(
     float(instanceId),
     float(strandId),
-    float(rngFac)
+    float(rngFac) + float(instanceId / 2u) + float(instanceId / 3u)
   );
   vec3 v = hash(seed);
   return to_neg1_1(normalize(v));
@@ -112,8 +111,8 @@ vec3 getFollowHairDisplacement (
     return vec3(0.0);
   }
 
-  vec3 rootOffset = randomizeStrandPos(params.instanceId, params.strandId, 0u);
-  vec3 tipOffset = randomizeStrandPos(params.instanceId, params.strandId, 1u);
+  vec3 rootOffset = randomizeStrandPos(params.instanceId, params.strandId, 1u);
+  vec3 tipOffset = randomizeStrandPos(params.instanceId, params.strandId, 2u);
   rootOffset *= params.followHairSpreadRoot;
   tipOffset *= params.followHairSpreadTip;
   return mix(tipOffset, rootOffset, vertex_position);
@@ -174,9 +173,11 @@ TressFXVertex getExpandedTressFXVert(TressFXParams params) {
 	bool isOdd = (params.vertexId & 0x01u) > 0u;
   result.positionWorldSpace = (isOdd ? hairEdgePositions[0] : hairEdgePositions[1]); // may not be 100% accurate with fixes below
   result.position = params.viewProjMat * result.positionWorldSpace;
-  result.tangent = vec4(t, ratio); // pack tangent + ThinTipRatio
+  result.tangent = t;
   result.vertexRootToTipFactor = vertex_position;
-  result.normal = towardsCamera; // ?! might as well
+  // result.normal = towardsCamera; // ?! might as well.
+  // result.normal = normalize(result.positionWorldSpace.xyz - v);
+  result.normal = normalize(result.positionWorldSpace.xyz - u_centerOfGravity);
 
   // some additional fixing
   {
