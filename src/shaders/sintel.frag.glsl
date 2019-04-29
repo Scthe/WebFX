@@ -7,6 +7,11 @@ precision highp usampler2D;
 uniform vec3 u_cameraPosition;
 // material
 uniform usampler2D u_albedoTexture;
+uniform usampler2D u_specularTexture;
+uniform usampler2D u_hairShadowTexture;
+uniform float u_specular;
+uniform float u_specularMul;
+uniform int u_materialFlags;
 uniform float u_sssTransluency;
 uniform float u_sssWidth;
 uniform float u_sssBias;
@@ -53,28 +58,69 @@ float SSSSS_sampleDepthLinear (sampler2D depthTex, vec2 texcoord) {
 @import ./_utils;
 @import ./_material;
 // @i mport ./_skin;
-// @i mport ./_pbr;
+@import ./_pbr;
 @import ./_shadows;
 #define SSSS_GLSL_3 1
 @import ./_separableSSSSS;
 
 
-Material createMaterial() {
-  // as uint [0-255]
-  uvec3 albedoU = texture(u_albedoTexture, fixOpenGLTextureCoords_AxisY(v_UV)).rgb;
+const int FLAG_IS_METALIC = 1;
+const int FLAG_USE_SPECULAR_TEXTURE = 2;
+const int FLAG_USE_HAIR_SHADOW_TEXTURE = 4;
 
+
+vec3 readModelTexture_RGB8UI(usampler2D tex, vec2 coords, bool reverseGamma) {
+  coords = fixOpenGLTextureCoords_AxisY(coords);
+  uvec3 texAsUint = texture(tex, coords).rgb; // as uint [0-255]
+  vec3 texAsFloat = vec3(texAsUint) / 255.0;
+  if (reverseGamma) {
+    texAsFloat = sRGBtoLinear(texAsFloat, 2.4);
+  }
+  return texAsFloat;
+}
+
+float readSpecular() {
+  // we are going to pretend that specular is same as smoothness. Probably is not, but..
+  if (isFlag(u_materialFlags, FLAG_USE_SPECULAR_TEXTURE)) {
+    return readModelTexture_RGB8UI(u_specularTexture, v_UV, false).r;
+  } else {
+    return u_specular;
+  }
+}
+
+float readHairShadow() {
+  if (isFlag(u_materialFlags, FLAG_USE_HAIR_SHADOW_TEXTURE)) {
+    // special code for this demo
+    // the texture is square, so we have toadjust UVs
+    vec2 adjustedUV = vec2(v_UV.x * 2.0 - 1.0, v_UV.y);
+    if (outOfScreen(adjustedUV)) {
+      return NOT_IN_SHADOW;
+    }
+    float hairShadowVal = readModelTexture_RGB8UI(u_hairShadowTexture, adjustedUV, false).r;
+    return hairShadowVal;
+  } else {
+    return NOT_IN_SHADOW;
+  }
+}
+
+
+Material createMaterial() {
   Material material;
   material.normal = v_Normal;
   material.toEye = normalize(u_cameraPosition - v_Position);
   material.fresnel = dotMax0(material.normal, material.toEye);
-  material.albedo = vec3(albedoU) / 255.0;
-  material.albedo = sRGBtoLinear(material.albedo, 2.4);
+  material.albedo = readModelTexture_RGB8UI(u_albedoTexture, v_UV, true);
   material.positionWS = v_Position;
+  material.isMetallic = isFlag(u_materialFlags, FLAG_IS_METALIC) ? 1.0 : 0.0;
+  material.specularMul = u_specularMul;
+  // convert specular/smoothness -> roughness
+  material.roughness = 1.0 - readSpecular();
 
   vec3 toCaster = normalize(u_directionalShadowCasterPosition.xyz - v_Position);
   material.shadow = 1.0 - calculateDirectionalShadow(
     v_PositionLightShadowSpace, material.normal, toCaster
   );
+  material.hairShadow = 1.0 - readHairShadow();
 
   return material;
 }
@@ -99,13 +145,15 @@ vec3 doShading(Material material, Light lights[3]) {
   for (uint i = 0u; i < 3u; i++) {
     Light light = lights[i];
 
-    // ambient += pbr(material, light) * (1.0f - material.shadow);
+    vec3 contrib = pbr(material, light);
 
+    /* // OR instead of PBR:
     vec3 L = normalize(light.position - material.positionWS); // wi in integral
     float NdotL = dotMax0(material.normal, L);
     vec3 radiance = light.color * light.intensity; // incoming color from light
-
     vec3 contrib = material.albedo * radiance * NdotL;
+    */
+
     radianceSum += contrib;
   }
 
@@ -124,9 +172,9 @@ vec3 doShading(Material material, Light lights[3]) {
   );
   contribSSS = contribSSS * radianceSum * u_sssStrength;
 
-  radianceSum = radianceSum * clamp(material.shadow, 1.0 - u_maxShadowContribution, 1.0);
+  float shadow = min(material.shadow, material.hairShadow);
+  radianceSum = radianceSum * clamp(shadow, 1.0 - u_maxShadowContribution, 1.0);
   return ambient + radianceSum + contribSSS;
-  // return contribSSS;
 }
 
 

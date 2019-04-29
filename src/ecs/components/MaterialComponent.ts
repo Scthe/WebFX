@@ -5,7 +5,8 @@ export class MaterialComponent extends Component<ComponentType.Material> {
 
   // ambientCol: [206, 230, 255],
   public isMetallic = false;
-  public roughness = 0.7;
+  public specular = 0.7;
+  public specularMul = 1.0; // not PBR, but needed for eyes
 
   public fresnelExponent = 11.8;
   public fresnelMultiplier = 17.5;
@@ -20,12 +21,12 @@ export class MaterialComponent extends Component<ComponentType.Material> {
   constructor(
     /* albedo for dielectrics, F0 for metalics*/
     public albedoTex: Texture,
+    /* the usual specular texture */
+    public specularTex: Texture,
+    /* special texture for this demo */
+    public hairShadowTex: Texture = null,
   ) {
     super();
-  }
-
-  get packedRoughnessMetallic () {
-    return this.isMetallic ? this.roughness : -this.roughness;
   }
 
   destroy(_: Webgl) {}

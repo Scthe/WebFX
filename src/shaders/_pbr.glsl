@@ -112,7 +112,8 @@ vec3 pbr (const Material material, const Light light) {
   vec3 N = material.normal; // normal at fragment
   vec3 V = normalize(u_cameraPosition - material.positionWS); // viewDir
   vec3 L = light.position - material.positionWS; // wi in integral
-  float attenuation = lightAttenuation(length(L), light.radius);
+  // float attenuation = lightAttenuation(length(L), light.radius);
+  float attenuation = 1.0; // hardcoded for this demo
   L = normalize(L);
 
   // diffuse
@@ -121,44 +122,11 @@ vec3 pbr (const Material material, const Light light) {
   // specular
   vec3 F;
   vec3 specular = pbr_CookTorrance(material, V, L, F);
+  specular = specular * material.specularMul; // not PBR, but simplifies material setup
 
   // final light calc.
   float NdotL = dotMax0(N, L);
   vec3 brdfFinal = pbr_mixDiffuseAndSpecular(material, lambert, specular, F);
   vec3 radiance = light.color * attenuation * light.intensity; // incoming color from light
   return brdfFinal * radiance * NdotL;
-}
-
-vec3 ambientLight(Material material) {
-  vec3 N = material.normal; // normal at fragment
-  vec3 V = normalize(u_cameraPosition - material.positionWS); // viewDir
-  vec3 F0 = mix(DIELECTRIC_FRESNEL, material.albedo, material.isMetallic);
-  vec3 F = FresnelSchlick(dotMax0(N, V), F0); // also kS
-  vec3 kD = 1.0 - F;
-
-  // ambient color
-  vec3 diffuse = (u_ambientLight.rgb / 255.0) * u_ambientLight.a;
-
-  // ambient IBL diffuse
-  // diffuse += textureLod(u_nearestProbeTexture, material.normal, 4.0).rgb * u_lightContribCoef.y;
-  vec3 sampleDir = reflectSampleDirectionForParalaxCorrectedCubemap(
-    u_cameraPosition,
-    material.positionWS,
-    material.normal,
-    u_nearestProbe
-  );
-  diffuse += textureLod(u_nearestProbeTexture, sampleDir, $IRRADIANCE_MIPMAP$).rgb * u_lightContribCoef.y;
-
-  // IBL specular
-  vec3 R = reflect(-V, N);
-  vec3 sampleDirSpec = sampleDirectionForParalaxCorrectedCubemap(
-    material.positionWS, R, u_nearestProbe
-  );
-  vec3 prefilteredColor = textureLod(u_nearestProbeTexture, sampleDirSpec,  material.roughness * $RADIANCE_MIPMAPS$).rgb;
-  vec2 envBrdfSampler = vec2(dotMax0(N, V), material.roughness);
-  uvec2 envBRDF_u = texture(u_brdfLUTTexture, envBrdfSampler).rg;
-  vec2 envBRDF = vec2(envBRDF_u) / 255.0;
-  vec3 specular = prefilteredColor * (F * envBRDF.x + envBRDF.y)  * u_lightContribCoef.z;
-
-  return diffuse * kD * material.albedo + specular;
 }

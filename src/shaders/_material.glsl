@@ -4,8 +4,11 @@ struct Material {
   vec3 toEye;
   float fresnel;
   vec3 albedo;
-  // vec3 skin; // tmp result
+  float roughness;
+  float specularMul; // needed for eyes. Normally You create separate mesh etc, but I'm too lazy
   float shadow; // 0.0 - in shadow, 1.0 - in light
+  float hairShadow; // 0.0 - in shadow, 1.0 - in light. This is special Sintel texture!!!
+  float isMetallic;
 };
 
 struct Light {

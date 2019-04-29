@@ -50,15 +50,18 @@ export class FrameResources {
   public dbgShadowsShader: Shader;
   public dbgSphereShader: Shader;
 
+  constructor (
+    private cfg: Config
+  ) {}
 
-  public initialize (cfg: Config, device: Device) {
+  public initialize (device: Device) {
     this.initializeShaders(device.gl);
 
-    const shadowRes = this.initializeShadowResources(device, cfg.shadows.shadowmapSize);
+    const shadowRes = this.initializeShadowResources(device, this.cfg.shadows.shadowmapSize);
     this.shadowDepthTex = shadowRes.texture;
     this.shadowDepthFbo = shadowRes.fbo;
 
-    const sssRes = this.initializeShadowResources(device, cfg.lightSSS.depthmapSize);
+    const sssRes = this.initializeShadowResources(device, this.cfg.lightSSS.depthmapSize);
     this.sssDepthTex = sssRes.texture;
     this.sssDepthFbo = sssRes.fbo;
   }
@@ -116,6 +119,7 @@ export class FrameResources {
 
   private initializeForwardPassResources (device: Device, d: Dimensions) {
     const {gl} = device;
+    d = this.getFullscreenDimensions(d);
 
     this.forwardDepthTex = this.createTexture(
       device,
@@ -146,6 +150,7 @@ export class FrameResources {
 
   private initializeLinearDepthPassResources (device: Device, d: Dimensions) {
     const {gl} = device;
+    d = this.getFullscreenDimensions(d);
 
     this.linearDepthTex = this.createTexture(
       device,
@@ -159,6 +164,7 @@ export class FrameResources {
 
   private initializeTonemappingPassResources (device: Device, d: Dimensions) {
     const {gl} = device;
+    d = this.getFullscreenDimensions(d);
 
     this.tonemappingResultTex = this.createTexture(
       device,
@@ -182,6 +188,13 @@ export class FrameResources {
     const fbo = new Fbo(gl, [texture]);
 
     return {texture, fbo};
+  }
+
+  private getFullscreenDimensions(d: Dimensions): Dimensions {
+    if (this.cfg.useMSAA) {
+      return { width: d.width * 2, height: d.height * 2 };
+    }
+    return d;
   }
 
   private createTexture (

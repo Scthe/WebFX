@@ -9,6 +9,11 @@ import {PassExecuteParams} from './structs';
 import {MaterialComponent, TransformComponent, MeshComponent} from 'ecs';
 
 
+const FLAG_IS_METALIC = 1;
+const FLAG_USE_SPECULAR_TEXTURE = 2;
+const FLAG_USE_HAIR_SHADOW_TEXTURE = 4;
+
+
 interface ForwardPassData {
   getLightShadowMvp: (modelMat: mat4) => mat4;
   getSSS_VP: () => mat4;
@@ -20,7 +25,7 @@ interface ForwardPassData {
 export class ForwardPass {
 
   execute (params: PassExecuteParams, passData: ForwardPassData) {
-    const {cfg, device, frameRes, viewport, camera, ecs} = params;
+    const {cfg, device, frameRes, camera, ecs} = params;
     const {gl} = device;
 
     const shader = frameRes.meshShader;
@@ -28,7 +33,7 @@ export class ForwardPass {
 
     const fbo = frameRes.forwardFbo;
     fbo.bind(gl, FboBindType.Draw, true);
-    gl.viewport(0.0, 0.0, viewport.width, viewport.height);
+    gl.viewport(0.0, 0.0, fbo.dimensions[0], fbo.dimensions[1]);
 
     // prepare for clear - reset all write masks etc.
     const dpClearAll = new DrawParams();
@@ -64,6 +69,11 @@ export class ForwardPass {
         ]),
         // material:
         'u_albedoTexture': material.albedoTex,
+        'u_specularTexture': material.specularTex ? material.specularTex : material.albedoTex, // may be ignored using flags
+        'u_hairShadowTexture': material.hairShadowTex ? material.hairShadowTex : material.albedoTex, // may be ignored using flags
+        'u_specular': material.specular,
+        'u_specularMul': material.specularMul,
+        'u_materialFlags': this.createMaterialFlags(material),
         'u_sssTransluency': material.sssTransluency,
         'u_sssWidth': material.sssWidth,
         'u_sssBias': material.sssBias,
@@ -87,6 +97,19 @@ export class ForwardPass {
 
       device.renderMesh(mesh);
     }, MaterialComponent, TransformComponent, MeshComponent);
+  }
+
+  private createMaterialFlags (material: MaterialComponent) {
+    let flags = 0;
+    const addFlag = (cond: boolean, bit: number) => {
+      flags |= cond ? bit : 0;
+    };
+
+    addFlag(material.isMetallic, FLAG_IS_METALIC);
+    addFlag(Boolean(material.specularTex), FLAG_USE_SPECULAR_TEXTURE);
+    addFlag(Boolean(material.hairShadowTex), FLAG_USE_HAIR_SHADOW_TEXTURE);
+
+    return flags;
   }
 
   public static lightUniforms (prefix: string, lightCfg: LightCfg) {

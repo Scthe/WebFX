@@ -23,6 +23,8 @@ const OBJ_FILES = {
 };
 const TEXTURE_FILES = {
   'sintel': require('../../assets/sintel_lite_v2_1/textures/sintel_skin_diff.jpg'),
+  'sintel_spec': require('../../assets/sintel_lite_v2_1/textures/sintel_skin_spec.jpg'),
+  'sintel_hairShadow': require('../../assets/sintel_lite_v2_1/textures/sintel_hair_shadow.jpg'),
   'sintel_eyeballs': require('../../assets/sintel_lite_v2_1/textures/sintel_eyeball_diff.jpg'),
 };
 const TFX_FILE = require('../../assets/sintel_lite_v2_1/GEO-sintel_hair_emit.002-sintel_hair.tfx');
@@ -88,13 +90,13 @@ const shoveMeshIntoGpu = (gl: Webgl, mesh: Mesh): MeshComponent => {
   );
 };
 
-const createAlbedoTex = (gl: Webgl, tbs: TextureBindingState, size: vec2) => {
+const createModelTexture = (gl: Webgl, tbs: TextureBindingState, size: vec2, format: number) => {
   return new Texture(
     gl, tbs,
     TextureType.Texture2d,
     Vec3(size[0], size[1], 0),
     0,
-    gl.RGB8UI,
+    format,
     createTextureOpts({
       filterMin: TextureFilterMin.Nearest,
       filterMag: TextureFilterMag.Nearest,
@@ -103,22 +105,30 @@ const createAlbedoTex = (gl: Webgl, tbs: TextureBindingState, size: vec2) => {
 };
 
 const loadSintel = async (ecs: Ecs, gl: Webgl, tbs: TextureBindingState) => {
-  const sintelTex = createAlbedoTex(gl, tbs, Vec2(2048, 1024));
+  const sintelTex = createModelTexture(gl, tbs, Vec2(2048, 1024), gl.RGB8UI);
   await loadTexture(gl, tbs, TEXTURE_FILES.sintel, sintelTex);
+  // too lazy to save as single-channel, use full RGB..
+  const sintelSpecTex = createModelTexture(gl, tbs, Vec2(2048, 1024), gl.RGB8UI);
+  await loadTexture(gl, tbs, TEXTURE_FILES.sintel_spec, sintelSpecTex);
+  // too lazy to save as single-channel, use full RGB..
+  const sintelhairShadowTex = createModelTexture(gl, tbs, Vec2(512, 512), gl.RGB8UI);
+  await loadTexture(gl, tbs, TEXTURE_FILES.sintel_hairShadow, sintelhairShadowTex);
 
   const entity = ecs.createEnity();
-  ecs.addComponent(entity, new MaterialComponent(sintelTex));
+  ecs.addComponent(entity, new MaterialComponent(sintelTex, sintelSpecTex, sintelhairShadowTex));
   ecs.addComponent(entity, shoveMeshIntoGpu(gl, await loadMesh(OBJ_FILES.sintel)));
   ecs.addComponent(entity, new NameComponent(ENTITY_SINTEL));
   return entity;
 };
 
 const loadSintelEyes = async (ecs: Ecs, gl: Webgl, tbs: TextureBindingState) => {
-  const sintelEyeTex = createAlbedoTex(gl, tbs, Vec2(512, 512));
+  const sintelEyeTex = createModelTexture(gl, tbs, Vec2(512, 512), gl.RGB8UI);
   await loadTexture(gl, tbs, TEXTURE_FILES.sintel_eyeballs, sintelEyeTex);
 
   const entity = ecs.createEnity();
-  ecs.addComponent(entity, new MaterialComponent(sintelEyeTex));
+  const mat = new MaterialComponent(sintelEyeTex, null);
+  mat.specularMul = 3.0;
+  ecs.addComponent(entity, mat);
   ecs.addComponent(entity, shoveMeshIntoGpu(gl, await loadMesh(OBJ_FILES.sintel_eyeballs)));
   ecs.addComponent(entity, new NameComponent(ENTITY_SINTEL_EYES));
   return entity;

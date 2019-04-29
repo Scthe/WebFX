@@ -1,3 +1,5 @@
+const float PI = 3.14159265359;
+
 vec2 fixOpenGLTextureCoords_AxisY(vec2 uv) {
   return vec2(uv.x, 1.0 - uv.y);
 }
@@ -91,4 +93,18 @@ vec3 hash(vec3 a) {
   a = fract(a * vec3(.8, .8, .8));
   a += dot(a, a.yxz + 19.19);
   return fract((a.xxy + a.yxx) * a.zyx);
+}
+
+
+/**
+ * Example usage:
+ * uniform int u_optionFlags;
+ * const int FLAG_USE_GAUSS = 1;
+ * const int FLAG_USE_ROUGHNESS = 2;
+ * ...
+ * isFlag(u_optionFlags, FLAG_USE_ROUGHNESS) ? .. : ..;
+*/
+//
+bool isFlag(int flags, int flagValue) {
+  return (flags & flagValue) > 0;
 }

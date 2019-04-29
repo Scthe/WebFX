@@ -44,6 +44,7 @@ export class Config {
   public readonly clearStencil: number = 0;
   public readonly resizeUpdateFreq: number = 1000; // ms
   public readonly showDebugPositions = false;
+  public readonly useMSAA = true; // ok, technically it's brute force supersampling, but who cares?
 
   public readonly stencilConsts = {
     skin: 1 << 0,
@@ -59,7 +60,7 @@ export class Config {
   // <editor-fold> CAMERA
   public readonly camera = {
     position: Vec3(0, 2.5, 5),
-    // position: Vec3(0, 4, 2), // closeup on hair
+    // position: Vec3(0, 3.5, 2), // closeup on hair
     rotation: Vec2(0, 0), // radians
     settings: {
       fovDgr: 75,
@@ -81,7 +82,7 @@ export class Config {
     hairTfxRadiusMultipler: 1.1,
     strength: 0.7,
     directionalLight: {
-      posPhi: 125, // horizontal [dgr]
+      posPhi: 105, // horizontal [dgr]
       posTheta: 45, // verical [dgr]
       posRadius: SHADOWS_ORTHO_SIZE, // verify with projection box below!!!
       target: Vec3(0, 2, 0),
@@ -130,7 +131,7 @@ export class Config {
     posRadius: SHADOWS_ORTHO_SIZE,
     // SSS blur pass
     blurWidth: 25.0,
-    blurStrength: 0.8,
+    blurStrength: 0.35,
     blurFollowSurface: false, // slight changes for incident angles ~90dgr
     // will reuse target & projection settings from shadows - safer this way..
   };

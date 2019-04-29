@@ -39,6 +39,7 @@ interface ColorGradingUIOpts {
   highlightsMin?: boolean;
 }
 
+type MSAAListener = () => void;
 
 
 export class UISystem {
@@ -49,12 +50,13 @@ export class UISystem {
     private readonly cfg: Config,
   ) { }
 
-  initialize (ecs: Ecs) {
+  initialize (ecs: Ecs, msaaListener: MSAAListener) {
     this.gui = new GUI();
     const colorGrading = this.cfg.postfx.colorGrading;
 
     this.addColorController(this.gui, this.cfg, 'clearColor', 'Bg color');
     this.gui.add(this.cfg, 'showDebugPositions').name('Show positions');
+    this.gui.add(this.cfg, 'useMSAA').name('Use MSAA').onFinishChange(msaaListener);
 
     this.addMaterialFolder(this.gui, ecs, 'Sintel', ENTITY_SINTEL);
     this.addMaterialFolder(this.gui, ecs, 'Sintel_eyes', ENTITY_SINTEL_EYES);
@@ -79,7 +81,13 @@ export class UISystem {
     const mat = ecs.getComponent(entity, MaterialComponent);
 
     const dir = gui.addFolder(folderName);
-    // dir.open();
+    dir.open();
+
+    if (!mat.specularTex) {
+      // may be easier to understand this than pbr's 'roughness' (microfacets etc.)
+      dir.add(mat, 'specular', 0.0, 1.0, 0.01).name('Specular');
+    }
+    dir.add(mat, 'specularMul', 0.0, 6.0, 0.1).name('Specular mul');
 
     dir.add(mat, 'sssTransluency', 0.0, 1.0).name('SSS transluency');
     dir.add(mat, 'sssWidth', 0, 100).name('SSS width');
@@ -105,7 +113,7 @@ export class UISystem {
     const tfxComp = ecs.getComponent(entity, TfxComponent);
 
     const dir = gui.addFolder(folderName);
-    dir.open();
+    // dir.open();
 
     const displayModeDummy = createDummy(tfxComp, 'displayMode', [
       { label: 'Final', value: 0, },

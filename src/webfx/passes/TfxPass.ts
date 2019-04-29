@@ -17,7 +17,7 @@ interface TfxPassData {
 export class TfxPass {
 
   execute (params: PassExecuteParams, passData: TfxPassData) {
-    const {cfg, device, frameRes, viewport, camera, ecs} = params;
+    const {cfg, device, frameRes, camera, ecs} = params;
     const {gl} = device;
 
     const shader = frameRes.tfxShader;
@@ -34,7 +34,7 @@ export class TfxPass {
 
     const fbo = frameRes.forwardFbo;
     fbo.bind(gl, FboBindType.Draw, true);
-    gl.viewport(0.0, 0.0, viewport.width, viewport.height);
+    gl.viewport(0.0, 0.0, fbo.dimensions[0], fbo.dimensions[1]);
 
     const shadowVP = passData.getLightShadowMvp(Mat4());
 
@@ -79,7 +79,7 @@ export class TfxPass {
         modelMat: transform.modelMatrix,
         viewProjectionMat: camera.viewProjectionMatrix,
         cameraPosition: camera.position,
-        viewport,
+        viewport: { width: fbo.dimensions[0], height: fbo.dimensions[1] },
         cfg,
         radiusMultiplier: 1.0,
       });

@@ -30,9 +30,9 @@ export class TfxComponent extends Component<ComponentType.Tfx> {
   // Essentially, render each guide hair `followHairs` times with some displacement
   public followHairs = 10;
   // displacement of follow hair at the root
-  public followHairSpreadRoot = 0.28;
+  public followHairSpreadRoot = 0.14;
   // displacement of follow hair at the tip
-  public followHairSpreadTip = 0.18;
+  public followHairSpreadTip = 0.09;
   // debug display mode, see UISystem for modes
   public displayMode = 0;
   // material

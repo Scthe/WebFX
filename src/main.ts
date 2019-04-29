@@ -72,16 +72,17 @@ const initialize = async (): Promise<GlobalVariables> => {
 
   globals.ecs = new Ecs();
   globals.timingSystem = new TimingSystem();
-  globals.frameResources = new FrameResources();
-  globals.frameResources.initialize(globals.config, globals.device);
+  globals.frameResources = new FrameResources(globals.config);
+  globals.frameResources.initialize(globals.device);
 
   // screen/window resize handle
-  globals.resizeSystem = new ResizeSystem(globals.gl, cfg.resizeUpdateFreq);
-  globals.resizeSystem.addHandler((d: Dimensions) => {
+  const resizeHandler = (d: Dimensions) => {
     globals.camera.camera.updateProjectionMatrix(d.width, d.height);
     globals.frameResources.onResize(globals.device, d);
     globals.device.surfaceSize = d;
-  });
+  };
+  globals.resizeSystem = new ResizeSystem(globals.gl, cfg.resizeUpdateFreq);
+  globals.resizeSystem.addHandler(resizeHandler);
 
   // camera
   globals.camera = {
@@ -101,7 +102,9 @@ const initialize = async (): Promise<GlobalVariables> => {
   // misc
   globals.statsSystem = new StatsSystem();
   globals.uISystem = new UISystem(cfg);
-  globals.uISystem.initialize(globals.ecs);
+  globals.uISystem.initialize(globals.ecs, () => {
+    resizeHandler(globals.device.surfaceSize);
+  });
 
   //
   globals.resizeSystem.forceRecalc();

@@ -24,14 +24,15 @@ export const TonemappingModesList = [
 export class TonemappingPass {
 
   execute (params: PassExecuteParams) {
-    const {cfg, device, frameRes, viewport} = params;
+    const {cfg, device, frameRes} = params;
     const {gl} = device;
 
     const shader = frameRes.tonemappingShader;
     shader.use(gl);
 
+    const fbo = frameRes.tonemappingFbo;
     frameRes.tonemappingFbo.bind(gl, FboBindType.Draw, true);
-    gl.viewport(0.0, 0.0, viewport.width, viewport.height);
+    gl.viewport(0.0, 0.0, fbo.dimensions[0], fbo.dimensions[1]);
 
     const colorGradCfg = cfg.postfx.colorGrading;
 
