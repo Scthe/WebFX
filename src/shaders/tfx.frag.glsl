@@ -6,6 +6,11 @@ precision highp usampler2D;
 
 uniform int u_displayMode;
 uniform vec3 u_cameraPosition;
+uniform vec2 u_viewportSize;
+// ao
+uniform sampler2D u_aoTex;
+uniform float u_aoStrength;
+uniform float u_aoExp;
 // Shadow
 uniform sampler2D u_directionalShadowDepthTex;
 uniform vec4 u_directionalShadowCasterPosition; // [position.xyz, bias (negative if pcss)]
@@ -41,6 +46,7 @@ in vec3 v_tangent;
 in vec4 v_positionLightShadowSpace;
 
 layout(location = 0) out vec4 outColor1;
+layout(location = 1) out vec4 outColor2;
 
 
 @import ./_utils;
@@ -134,6 +140,12 @@ vec3 doShading(Light lights[3]) {
     // radianceSum += specular1 + specular2;
   }
 
+  // ambient occlusion
+  float ao = texture(u_aoTex, gl_FragCoord.xy / u_viewportSize).r;
+  ao = getCustom_AO(ao, u_aoStrength, u_aoExp);
+  radianceSum *= ao;
+  ambient *= ao;
+
   float shadow = calculateShadow();
   radianceSum = radianceSum * clamp(shadow, 1.0 - u_maxShadowContribution, 1.0);
   return ambient + radianceSum;
@@ -180,4 +192,5 @@ void main() {
   }
 
   outColor1 = vec4(result, 1.0);
+  outColor2 = vec4(to_0_1(normalize(v_normal)), 1.0);
 }

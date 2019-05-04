@@ -5,6 +5,8 @@ import {arrayToVec3} from 'gl-utils';
 
 class TfxMaterial {
   public albedo = arrayToVec3([31, 26, 24], true);
+  public aoStrength = 1.0;
+  public aoExp = 3.1;
 
   public specularColor1 = arrayToVec3([87, 43, 24], true);
   public specularPower1 = 160;

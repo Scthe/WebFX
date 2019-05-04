@@ -46,7 +46,7 @@ void main() {
 
   // color grade raw HDR
   // In old days we used LUTs for this, but LUTs require conversion to LDR.
-  // Since HDR displays are now avaialable, we do color grading in HDR,
+  // Since HDR displays are now available, we do color grading in HDR,
   // skipping LDR conversion. This, and also cause we can.
   vec3 colorAfterColorGrading = colorCorrectAll(colorHDR);
 

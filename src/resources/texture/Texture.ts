@@ -64,6 +64,12 @@ const getDepthStencilGlTexImageParams = (gl: Webgl, type: GLenum) => {
         format: gl.DEPTH_STENCIL,
         type: gl.UNSIGNED_INT_24_8
       };
+    case gl.DEPTH_COMPONENT32F:
+      return {
+        internalformat: gl.DEPTH_COMPONENT32F,
+        format: gl.DEPTH_COMPONENT,
+        type: gl.FLOAT
+      };
     case gl.DEPTH_COMPONENT:
     case gl.DEPTH_STENCIL:
     case gl.UNSIGNED_INT_24_8:

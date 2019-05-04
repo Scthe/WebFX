@@ -5,7 +5,12 @@ precision highp usampler2D;
 
 uniform float u_gamma;
 uniform vec2 u_viewport;
-uniform sampler2D u_tonemapped;
+uniform vec2 u_nearAndFar;
+uniform int u_displayMode;
+uniform sampler2D u_tonemappedTex;
+uniform sampler2D u_linearDepthTex;
+uniform sampler2D u_normalsTex;
+uniform sampler2D u_ssaoTex;
 // FXAA
 uniform float u_subpixel;
 uniform float u_edgeThreshold;
@@ -21,30 +26,22 @@ layout(location = 0) out vec4 color1;
 @import ./_fxaa;
 
 
-struct PixelInfo {
-  vec2 posTextureSpace; // [0-1] x [0-1]
-  uvec2 posPixelSpace; // [0-viewport.x] x [0-viewport.y]
-};
-
-PixelInfo createPixelInfo () {
-  PixelInfo info;
-  info.posTextureSpace = to_0_1(v_position);
-  info.posPixelSpace = uvec2(info.posTextureSpace * u_viewport);
-  return info;
-}
+const int DISPLAY_MODE_FINAL = 0;
+const int DISPLAY_MODE_LINEAR_DEPTH = 1;
+const int DISPLAY_MODE_NORMALS = 2;
+const int DISPLAY_MODE_SSAO = 3;
 
 
-
-vec3 doFxaa (PixelInfo pixelInfo) {
+vec3 doFxaa (vec2 uv) {
   vec4 color;
 
   if (u_edgeThreshold == 0.0) {
-    color = texture(u_tonemapped, pixelInfo.posTextureSpace);
+    color = texture(u_tonemappedTex, uv);
   } else {
     color = FxaaPixelShader(
-      pixelInfo.posTextureSpace, // in [0-1]
-      u_tonemapped,
-      u_tonemapped,
+      uv, // in [0-1]
+      u_tonemappedTex,
+      u_tonemappedTex,
       vec2(1.0) / u_viewport,
       u_subpixel,
       u_edgeThreshold,
@@ -59,9 +56,36 @@ vec3 doFxaa (PixelInfo pixelInfo) {
 
 
 void main() {
-  color1 = vec4(1.0f, 0, 1.0f, 1.0f);
-  PixelInfo pixelInfo = createPixelInfo();
+  vec2 uv = to_0_1(v_position);
+  vec3 result;
 
-  vec3 tex = doFxaa(pixelInfo);
-  color1 = vec4(doGamma(tex, u_gamma), 1.0f);
+  switch(u_displayMode) {
+    case DISPLAY_MODE_LINEAR_DEPTH: {
+      float depth = texture(u_linearDepthTex, uv).r;
+      float d = u_nearAndFar.y - u_nearAndFar.x;
+      result = vec3(depth / d);
+      break;
+    }
+
+    case DISPLAY_MODE_NORMALS: {
+      vec3 normal = texture(u_normalsTex, uv).xyz;
+      result = abs(to_neg1_1(normal));
+      break;
+    }
+
+    case DISPLAY_MODE_SSAO: {
+      float ssao = texture(u_ssaoTex, uv).r;
+      result = vec3(ssao);
+      break;
+    }
+
+    default:
+    case DISPLAY_MODE_FINAL: {
+      vec3 tex = doFxaa(uv);
+      result = doGamma(tex, u_gamma);
+      break;
+    }
+  }
+
+  color1 = vec4(result, 1.0f);
 }

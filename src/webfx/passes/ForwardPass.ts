@@ -56,6 +56,11 @@ export class ForwardPass {
         'u_M': modelMatrix,
         'u_MVP': camera.getMVP(modelMatrix),
         'u_cameraPosition': camera.position,
+        'u_viewport': fbo.dimensions,
+        // ao:
+        'u_aoTex': frameRes.ssaoTex,
+        'u_aoStrength': cfg.ssao.aoStrength,
+        'u_aoExp': cfg.ssao.aoExp,
         // shadows:
         'u_directionalShadowMatrix_MVP': passData.getLightShadowMvp(modelMatrix),
         'u_directionalShadowDepthTex': frameRes.shadowDepthTex,

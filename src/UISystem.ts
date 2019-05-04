@@ -3,6 +3,7 @@ import {Config, LightCfg, ColorGradingProp, ColorGradingPerRangeSettings} from '
 import {MaterialComponent, Ecs, TfxComponent} from 'ecs';
 import {ENTITY_SINTEL, ENTITY_SINTEL_EYES, ENTITY_TRESSFX} from 'webfx';
 import {TonemappingModesList, TonemappingMode} from 'webfx/passes/TonemappingPass';
+import {SSAOPass} from 'webfx/passes';
 
 interface UiOpts<T> {
   label: string;
@@ -54,6 +55,15 @@ export class UISystem {
     this.gui = new GUI();
     const colorGrading = this.cfg.postfx.colorGrading;
 
+    // display mode
+    const displayModeDummy = createDummy(this.cfg, 'displayMode', [
+      { label: 'Final', value: 0, },
+      { label: 'Linear Depth', value: 1, },
+      { label: 'Normals', value: 2, },
+      { label: 'SSAO', value: 3, },
+    ]);
+    this.gui.add(displayModeDummy, 'displayMode', displayModeDummy.values).name('Display mode');
+    // other general stuff
     this.addColorController(this.gui, this.cfg, 'clearColor', 'Bg color');
     this.gui.add(this.cfg, 'showDebugPositions').name('Show positions');
     this.gui.add(this.cfg, 'useMSAA').name('Use MSAA').onFinishChange(msaaListener);
@@ -67,6 +77,7 @@ export class UISystem {
     this.addLightFolder(this.gui, this.cfg.light1, 'Light 1');
     this.addLightFolder(this.gui, this.cfg.light2, 'Light 2');
     this.addShadowsFolder(this.gui);
+    this.addSSAO(this.gui);
     this.addPostFx(this.gui);
     this.addColorGrading(this.gui, colorGrading.global, 'Color grading - general', {tint: true});
     this.addColorGrading(this.gui, colorGrading.shadows, 'Color grading - shadows', {shadowMax: true});
@@ -81,7 +92,7 @@ export class UISystem {
     const mat = ecs.getComponent(entity, MaterialComponent);
 
     const dir = gui.addFolder(folderName);
-    dir.open();
+    // dir.open();
 
     if (!mat.specularTex) {
       // may be easier to understand this than pbr's 'roughness' (microfacets etc.)
@@ -143,6 +154,9 @@ export class UISystem {
     dir.add(mat, 'specularPower2',  0.0, matRanges.maxSpec).name('Spec exp 2');
     dir.add(mat, 'specularStrength2',  0.0, 1.0).name('Spec str 2');
     dir.add(mat, 'secondaryShift',  matRanges.minShift, matRanges.maxShift, matRanges.dShift).name('Spec shift 2');
+
+    dir.add(mat, 'aoStrength', 0, 1, 0.01).name('AO strength');
+    dir.add(mat, 'aoExp', 0, 5, 0.1).name('AO exp');
   }
 
   private addShadowsFolder (gui: GUI) {
@@ -184,6 +198,21 @@ export class UISystem {
     dir.add(lightObj, 'posRadius', 0.0, 10.0).name('Position r');
     this.addColorController(dir, lightObj, 'color', 'Color');
     dir.add(lightObj, 'energy', 0.0, 2.0).name('Energy');
+  }
+
+  private addSSAO(gui: GUI) {
+    const dir = gui.addFolder('SSAO');
+    // dir.open();
+
+    const ssaoCfg = this.cfg.ssao;
+    dir.add(ssaoCfg, 'kernelSize', 1, SSAOPass.MAX_KERNEL_VALUES, 1).name('Kernel size');
+    dir.add(ssaoCfg, 'radius', 0.1, 3.0).name('Radius');
+    dir.add(ssaoCfg, 'bias', 0.0, 0.1).name('Bias');
+    dir.add(ssaoCfg, 'blurRadius', 0, 9, 1).name('Blur radius');
+    dir.add(ssaoCfg, 'blurGaussSigma', 1.0, 6.0, 0.1).name('Blur gauss sigma');
+    dir.add(ssaoCfg, 'blurMaxDepthDistance', 0.01, 0.4).name('Blur depth diff');
+    dir.add(ssaoCfg, 'aoStrength', 0, 1, 0.01).name('AO strength');
+    dir.add(ssaoCfg, 'aoExp', 0, 5, 0.1).name('AO exp');
   }
 
   private addPostFx (gui: GUI) {

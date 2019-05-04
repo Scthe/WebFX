@@ -10,6 +10,7 @@ uniform vec2 u_nearAndFar;
 
 in vec2 v_position;
 
+// NOTE: this will be in [zNear...zFar], not [0..1] !!!
 layout(location = 0) out vec4 outColor1;
 
 

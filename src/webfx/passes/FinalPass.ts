@@ -8,7 +8,7 @@ import {PassExecuteParams} from './structs';
 export class FinalPass {
 
   execute (params: PassExecuteParams) {
-    const {cfg, device, frameRes, viewport} = params;
+    const {cfg, device, frameRes, viewport, camera} = params;
     const {gl} = device;
 
     const shader = frameRes.finalShader;
@@ -25,9 +25,14 @@ export class FinalPass {
 
     setUniforms(device, shader, {
       'u_viewport': Vec2(viewport.width, viewport.height),
-      // textures:
-      'u_tonemapped': frameRes.tonemappingResultTex,
+      'u_displayMode': cfg.displayMode,
       'u_gamma': cfg.postfx.gamma,
+      'u_nearAndFar': Vec2(camera.settings.zNear, camera.settings.zFar),
+      // textures:
+      'u_tonemappedTex': frameRes.tonemappingResultTex,
+      'u_linearDepthTex': frameRes.linearDepthTex,
+      'u_normalsTex': frameRes.forwardNormalsTex,
+      'u_ssaoTex': frameRes.ssaoTex,
       // fxaa
       'u_subpixel': cfg.postfx.subpixel,
       'u_edgeThreshold': cfg.postfx.useFxaa ? cfg.postfx.edgeThreshold : 0.0,

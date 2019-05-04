@@ -45,6 +45,8 @@ export class Config {
   public readonly resizeUpdateFreq: number = 1000; // ms
   public readonly showDebugPositions = false;
   public readonly useMSAA = true; // ok, technically it's brute force supersampling, but who cares?
+  public readonly displayMode: number = 0; // debug display mode, see UISystem for modes
+
 
   public readonly stencilConsts = {
     skin: 1 << 0,
@@ -136,6 +138,21 @@ export class Config {
     // will reuse target & projection settings from shadows - safer this way..
   };
   // </editor-fold> // END: LIGHTS
+
+
+  // <editor-fold> SSAO
+  public readonly ssao = {
+    textureSizeMul: 0.5, // half/quater-res, wrt. MSAA
+    kernelSize: 64,
+    radius: 0.5,
+    bias: 0.025,
+    blurRadius: 7.0,
+    blurGaussSigma: 3.0,
+    blurMaxDepthDistance: 0.06,
+    aoStrength: 0.3, // only meshes
+    aoExp: 3, // only meshes
+  };
+  // </editor-fold> // END: SSAO
 
 
   // <editor-fold> POSTFX

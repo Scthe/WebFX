@@ -25,6 +25,8 @@ import {
   SSSBlurPass,
   LinearDepthPass,
   TfxPass,
+  SSAOPass,
+  BlurPass,
 } from 'webfx/passes';
 
 
@@ -131,9 +133,13 @@ const createRenderParams = (globals: GlobalVariables): PassExecuteParams => {
       viewProjectionMatrix: getVP(controller.viewMatrix, camera.perspectiveMatrix),
       position: controller.position,
       settings: camera.settings,
+      projectionMatrix: camera.perspectiveMatrix,
+      viewMatrix: controller.viewMatrix,
     }
   };
 };
+
+
 
 const renderScene = (globals: GlobalVariables) => {
   const params = createRenderParams(globals);
@@ -168,6 +174,9 @@ const renderScene = (globals: GlobalVariables) => {
     sssPosition: sssPos,
   });
 
+  // render hair
+  // TODO move AFTER SSS to avoid depth discontinuities,
+  //      may require 2nd linearize depth for nice debug output
   const tfxPass = new TfxPass();
   tfxPass.execute(params, {
     getLightShadowMvp: (modelMat: mat4) => shadowPass.getLightShadowMvp(config, modelMat, shadowPos),
@@ -192,6 +201,27 @@ const renderScene = (globals: GlobalVariables) => {
     isFirstPass: false,
   });
 
+  // SSAO
+  const ssaoPass = new SSAOPass();
+  ssaoPass.execute(params);
+  const ssaoBlurPass = new BlurPass(
+    config.ssao.blurRadius,
+    config.ssao.blurGaussSigma,
+    config.ssao.blurMaxDepthDistance
+  );
+  ssaoBlurPass.execute(params, {
+    depthTexture: frameResources.linearDepthTex,
+    fbo: frameResources.ssaoBlurPingPongFbo,
+    sourceTexture: frameResources.ssaoTex,
+    isFirstPass: true,
+  });
+  ssaoBlurPass.execute(params, {
+    depthTexture: frameResources.linearDepthTex,
+    fbo: frameResources.ssaoFbo,
+    sourceTexture: frameResources.ssaoBlurPingPongTex,
+    isFirstPass: false,
+  });
+
   // color grading + tonemapping
   const tonemappingPass = new TonemappingPass();
   tonemappingPass.execute(params);
@@ -200,6 +230,7 @@ const renderScene = (globals: GlobalVariables) => {
   const finalPass = new FinalPass();
   finalPass.execute(params);
 };
+
 
 
 const runMain = (globals: GlobalVariables) => (timeMs: number = 0) => {

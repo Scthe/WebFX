@@ -40,6 +40,7 @@ export class TfxPass {
 
     ecs.forEachEntity((_entityId, tfx, transform) => {
       setUniforms(device, shader, {
+        // NOTE: see Device class for rest of uniforms - not all are required for just rendering
         'u_displayMode': tfx.displayMode,
         // material:
         'u_albedo': tfx.material.albedo,
@@ -51,6 +52,10 @@ export class TfxPass {
         'u_specularPower2': tfx.material.specularPower2,
         'u_specularStrength1': tfx.material.specularStrength1,
         'u_specularStrength2': tfx.material.specularStrength2,
+        // ao:
+        'u_aoTex': frameRes.ssaoTex,
+        'u_aoStrength': tfx.material.aoStrength,
+        'u_aoExp': tfx.material.aoExp,
         // shadows:
         'u_directionalShadowMatrix_VP': shadowVP,
         'u_directionalShadowDepthTex': frameRes.shadowDepthTex,
@@ -73,7 +78,7 @@ export class TfxPass {
         ...ForwardPass.lightUniforms('light0', cfg.light0),
         ...ForwardPass.lightUniforms('light1', cfg.light1),
         ...ForwardPass.lightUniforms('light2', cfg.light2),
-      }, false);
+      }, true);
 
       device.renderTressFx(tfx, shader, {
         modelMat: transform.modelMatrix,

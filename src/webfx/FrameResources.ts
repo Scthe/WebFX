@@ -34,6 +34,7 @@ export class FrameResources {
   public meshShader: Shader;
   public forwardDepthTex: Texture;
   public forwardColorTex: Texture;
+  public forwardNormalsTex: Texture;
   public forwardFbo: Fbo;
   // TressFX
   public tfxShader: Shader;
@@ -41,6 +42,15 @@ export class FrameResources {
   public sssBlurShader: Shader;
   public sssBlurPingPongTex: Texture;
   public sssBlurPingPongFbo: Fbo;
+  // SSAO
+  public ssaoShader: Shader;
+  public ssaoTex: Texture;
+  public ssaoFbo: Fbo;
+  public ssaoBlurPingPongTex: Texture;
+  public ssaoBlurPingPongFbo: Fbo;
+  public ssaoRngTex: Texture; // small 4x4 texture
+  // blur
+  public blurShader: Shader;
   // tonemapping
   public tonemappingShader: Shader;
   public tonemappingResultTex: Texture; // [rgb, luma]
@@ -64,6 +74,8 @@ export class FrameResources {
     const sssRes = this.initializeShadowResources(device, this.cfg.lightSSS.depthmapSize);
     this.sssDepthTex = sssRes.texture;
     this.sssDepthFbo = sssRes.fbo;
+
+    this.initializeSSAO_RngTexture(device);
   }
 
   onResize (device: Device, d: Dimensions) {
@@ -72,6 +84,7 @@ export class FrameResources {
     this.initializeForwardPassResources(device, d);
     this.initializeLinearDepthPassResources(device, d);
     this.initializeTonemappingPassResources(device, d);
+    this.initializeSSAOPassResources(device, d);
   }
 
   private initializeShaders (gl: Webgl) {
@@ -115,6 +128,14 @@ export class FrameResources {
       require('shaders/tfx.vert.glsl'),
       require('shaders/tfx.frag.glsl'),
     );
+    this.ssaoShader = new Shader(gl,
+      require('shaders/fullscreenQuad.vert.glsl'),
+      require('shaders/ssao.frag.glsl'),
+    );
+    this.blurShader = new Shader(gl,
+      require('shaders/fullscreenQuad.vert.glsl'),
+      require('shaders/blur.frag.glsl'),
+    );
   }
 
   private initializeForwardPassResources (device: Device, d: Dimensions) {
@@ -131,9 +152,15 @@ export class FrameResources {
       gl.RGBA32F, d,
       this.createTextureOpts(gl, gl.RGBA32F)
     );
+    this.forwardNormalsTex = this.createTexture(
+      device,
+      gl.RGBA8, d,
+      this.createTextureOpts(gl, gl.RGBA8)
+    );
     this.forwardFbo = new Fbo(gl, [
       this.forwardDepthTex,
       this.forwardColorTex,
+      this.forwardNormalsTex,
     ]);
 
     // also SSS here, cause needs to be EXACT same
@@ -173,6 +200,59 @@ export class FrameResources {
     );
     this.tonemappingFbo = new Fbo(gl, [
       this.tonemappingResultTex,
+    ]);
+  }
+
+  private initializeSSAO_RngTexture(device: Device) {
+    const {gl, textureBindingState} = device;
+    const size = 4;
+
+    this.ssaoRngTex = this.createTexture(
+      device,
+      gl.RGB16F, {width: size, height: size},
+      {
+        ...DEFAULT_RENDER_TARGET_TEXTURE_OPTS,
+        filterMin: TextureFilterMin.Nearest,
+        filterMag: TextureFilterMag.Nearest,
+        wrap: [TextureWrap.Repeat, TextureWrap.Repeat, TextureWrap.Repeat],
+      }
+    );
+
+    const data = new Float32Array(size * size * 3);
+    for (let i = 0; i < size * size; i++) {
+      data[i * 3    ] = Math.random() * 2 - 1;
+      data[i * 3 + 1] = Math.random() * 2 - 1;
+      data[i * 3 + 2] = 0; // we will cross it with normal, which is (0,0,1) in fragment space
+    }
+    this.ssaoRngTex.write(
+      gl, textureBindingState,
+      0, {start: Vec3(0, 0, 0), dimensions: Vec3(size, size, 1)},
+      {
+        unsizedPixelFormat: gl.RGB,
+        perChannelType: gl.FLOAT,
+        data,
+      }
+    );
+  }
+
+  private initializeSSAOPassResources (device: Device, d: Dimensions) {
+    const {gl} = device;
+    const sizeMul = this.cfg.ssao.textureSizeMul;
+    d = this.getFullscreenDimensions(d);
+    d = {width: d.width * sizeMul, height: d.height * sizeMul};
+
+    this.ssaoTex = this.createTexture(device,
+      gl.R16F, d, this.createTextureOpts(gl, gl.R16F)
+    );
+    this.ssaoFbo = new Fbo(gl, [
+      this.ssaoTex,
+    ]);
+
+    this.ssaoBlurPingPongTex = this.createTexture(device,
+      gl.R16F, d, this.createTextureOpts(gl, gl.R16F)
+    );
+    this.ssaoBlurPingPongFbo = new Fbo(gl, [
+      this.ssaoBlurPingPongTex,
     ]);
   }
 
@@ -235,6 +315,7 @@ export class FrameResources {
     if (this.forwardFbo) { this.forwardFbo.destroy(gl); }
     if (this.forwardDepthTex) { this.forwardDepthTex.destroy(gl); }
     if (this.forwardColorTex) { this.forwardColorTex.destroy(gl); }
+    if (this.forwardNormalsTex) { this.forwardNormalsTex.destroy(gl); }
 
     if (this.linearDepthFbo) { this.linearDepthFbo.destroy(gl); }
     if (this.linearDepthTex) { this.linearDepthTex.destroy(gl); }
@@ -244,6 +325,9 @@ export class FrameResources {
 
     if (this.tonemappingFbo) { this.tonemappingFbo.destroy(gl); }
     if (this.tonemappingResultTex) { this.tonemappingResultTex.destroy(gl); }
+
+    if (this.ssaoFbo) { this.ssaoFbo.destroy(gl); }
+    if (this.ssaoTex) { this.ssaoTex.destroy(gl); }
   }
 
 }

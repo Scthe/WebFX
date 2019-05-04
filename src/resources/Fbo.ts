@@ -3,6 +3,7 @@ import {vec2, fromValues as Vec2} from 'gl-vec2';
 import STATIC_GL from 'gl-utils/gimme_gl';
 import {GlResource, verifyOk} from './GlResource';
 import {Texture} from './texture/Texture';
+import {getGlConstName} from 'gl-utils';
 
 
 export enum FboBindType {
@@ -90,7 +91,7 @@ export class Fbo extends GlResource<WebGLFramebuffer> {
     const status = gl.checkFramebufferStatus(gl.DRAW_FRAMEBUFFER);
     if (status !== gl.FRAMEBUFFER_COMPLETE) {
       this.destroy(gl);
-      throw `Fbo create error: '${status.toString(16)}'`;
+      throw `Fbo create error, checkFramebufferStatus: ${getGlConstName(status)}(${status.toString(16)})`;
     }
   }
 

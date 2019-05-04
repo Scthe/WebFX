@@ -5,6 +5,7 @@ precision highp usampler2D;
 // precision highp sampler2D;
 
 uniform vec3 u_cameraPosition;
+uniform vec2 u_viewport;
 // material
 uniform usampler2D u_albedoTexture;
 uniform usampler2D u_specularTexture;
@@ -19,6 +20,10 @@ uniform float u_sssGain;
 uniform float u_sssStrength;
 uniform sampler2D u_sssDepthTex;
 uniform vec3 u_sssPosition;
+// ao
+uniform sampler2D u_aoTex;
+uniform float u_aoStrength;
+uniform float u_aoExp;
 // Shadow
 uniform sampler2D u_directionalShadowDepthTex;
 uniform vec4 u_directionalShadowCasterPosition; // [position.xyz, bias (negative if pcss)]
@@ -46,6 +51,7 @@ in vec4 v_PositionLightShadowSpace;
 
 
 layout(location = 0) out vec4 outColor1;
+layout(location = 1) out vec4 outColor2; // normals
 
 
 // required by SSSSS import, but not used here (used in SSS blur)
@@ -108,11 +114,11 @@ Material createMaterial() {
   Material material;
   material.normal = v_Normal;
   material.toEye = normalize(u_cameraPosition - v_Position);
-  material.fresnel = dotMax0(material.normal, material.toEye);
   material.albedo = readModelTexture_RGB8UI(u_albedoTexture, v_UV, true);
   material.positionWS = v_Position;
   material.isMetallic = isFlag(u_materialFlags, FLAG_IS_METALIC) ? 1.0 : 0.0;
   material.specularMul = u_specularMul;
+  material.ao = texture(u_aoTex, gl_FragCoord.xy / u_viewport).r;
   // convert specular/smoothness -> roughness
   material.roughness = 1.0 - readSpecular();
 
@@ -125,21 +131,9 @@ Material createMaterial() {
   return material;
 }
 
-/*
-SkinParams createSkinParams() {
-  SkinParams skinParams;
-  skinParams.fresnelExponent = u_fresnelExponent;
-  skinParams.fresnelMultiplier = u_fresnelMultiplier;
-  skinParams.fresnelColor = u_fresnelColor;
-  skinParams.ssColor1 = u_ssColor1;
-  skinParams.ssColor2 = u_ssColor2;
-  return skinParams;
-}
-*/
-
 
 vec3 doShading(Material material, Light lights[3]) {
-  vec3 ambient = u_lightAmbient.rgb * u_lightAmbient.a;
+  vec3 ambient = u_lightAmbient.rgb * u_lightAmbient.a * material.ao;
   vec3 radianceSum = vec3(0.0);
 
   for (uint i = 0u; i < 3u; i++) {
@@ -157,6 +151,11 @@ vec3 doShading(Material material, Light lights[3]) {
     radianceSum += contrib;
   }
 
+  // ambient occlusion
+  // not PBR, I know, but we need this to highlight some details like collarbones etc.
+  float aoRadianceFactor = getCustom_AO(material.ao, u_aoStrength, u_aoExp);
+  radianceSum *= aoRadianceFactor;
+
   // add SSSSS forward scattering - transluency
   vec3 sssL = normalize(u_sssPosition - material.positionWS);
   vec3 contribSSS = SSSSTransmittance(
@@ -172,6 +171,7 @@ vec3 doShading(Material material, Light lights[3]) {
   );
   contribSSS = contribSSS * radianceSum * u_sssStrength;
 
+  // add shadow, combine
   float shadow = min(material.shadow, material.hairShadow);
   radianceSum = radianceSum * clamp(shadow, 1.0 - u_maxShadowContribution, 1.0);
   return ambient + radianceSum + contribSSS;
@@ -191,4 +191,5 @@ void main() {
   color = doShading(material, lights);
 
   outColor1 = vec4(color, 1.0);
+  outColor2 = vec4(to_0_1(material.normal), 1.0);
 }
