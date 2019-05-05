@@ -6,7 +6,6 @@ src/**/*.js
 src/**/*.js.map
 
 dist
-assets/*
 references
 
 npm-debug.log
