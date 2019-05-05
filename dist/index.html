@@ -1,0 +1,40 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+
+  <title>WebFx</title>
+  <meta name="description" content="Online TressFX model viewer">
+
+  <meta name="twitter:card" content="summary">
+  <meta name="twitter:url" content="https://scthe.github.io/WebFX/dist">
+  <meta name="twitter:title" content="WebFX">
+  <meta name="twitter:description" content="Online TressFX model viewer">
+
+  <style>
+    html, body {
+     margin: 0;
+  	 padding: 0;
+    }
+    * { box-sizing: border-box; }
+    canvas {
+      display: block;  /* prevents scrollbar */
+      width: 100vw;
+      height: 100vh;
+    }
+
+    .gui-width100 span{ width: 100% !important; }
+
+    #m-stats {
+      color: white;
+      position: absolute;
+      top: 50px; left: 5px;
+      font-size: 13px; font-family: monospace;
+    }
+  </style>
+</head>
+<body>
+  <canvas id='viewport-canvas'></canvas>
+<script type="text/javascript" src="main.bundle.js"></script></body>
+</html>

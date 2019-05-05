@@ -5,7 +5,6 @@ yarn.lock
 src/**/*.js
 src/**/*.js.map
 
-dist
 references
 
 npm-debug.log
