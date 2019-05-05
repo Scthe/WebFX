@@ -51,7 +51,6 @@ export class Device {
   }
 
   setState (newState: DrawParams): void {
-    // TODO add viewport and blends
     const gl = this.gl;
     applyDrawParams(gl, newState, this.drawParams);
     this.drawParams = newState;

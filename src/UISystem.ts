@@ -55,6 +55,14 @@ export class UISystem {
     this.gui = new GUI();
     const colorGrading = this.cfg.postfx.colorGrading;
 
+    // github
+    const ghDummy = {
+      openGithub: () => {
+        window.location.href = this.cfg.githubRepoLink;
+      }
+    };
+    this.gui.add(ghDummy, 'openGithub').name('GITHUB');
+
     // display mode
     const displayModeDummy = createDummy(this.cfg, 'displayMode', [
       { label: 'Final', value: 0, },
@@ -71,7 +79,7 @@ export class UISystem {
     this.addMaterialFolder(this.gui, ecs, 'Sintel', ENTITY_SINTEL);
     this.addMaterialFolder(this.gui, ecs, 'Sintel_eyes', ENTITY_SINTEL_EYES);
     this.addSSS_General(this.gui);
-    this.addTfxFolder(this.gui, ecs, 'TressFX', ENTITY_TRESSFX);
+    this.addTfxFolder(this.gui, ecs, 'TressFX Hair', ENTITY_TRESSFX);
     this.addAmbientLightFolder(this.gui);
     this.addLightFolder(this.gui, this.cfg.light0, 'Light 0');
     this.addLightFolder(this.gui, this.cfg.light1, 'Light 1');
@@ -104,7 +112,7 @@ export class UISystem {
     dir.add(mat, 'sssWidth', 0, 100).name('SSS width');
     dir.add(mat, 'sssBias', 0.0, 0.1).name('SSS bias');
     dir.add(mat, 'sssGain', 0.0, 1.0).name('SSS gain');
-    dir.add(mat, 'sssStrength', 0.0, 20.0).name('SSS strength');
+    dir.add(mat, 'sssStrength', 0.0, 10.0).name('SSS strength');
   }
 
   private addSSS_General (gui: GUI) {
@@ -219,8 +227,9 @@ export class UISystem {
     const dir = gui.addFolder('Post FX');
     // dir.open();
 
-    // gamma
+    // general
     dir.add(this.cfg.postfx, 'gamma', 1.0, 3.0).name('Gamma');
+    dir.add(this.cfg.postfx, 'ditherStrength', 0.0, 2.0, 0.01).name('Dither');
 
     // tonemapping
     // just please, for the love of God and all that is holy use ACES

@@ -72,8 +72,7 @@ export class TfxPass {
           cfg.lightAmbient.color[0],
           cfg.lightAmbient.color[1],
           cfg.lightAmbient.color[2],
-          // cfg.lightAmbient.energy,
-          0.0, // TODO restore
+          cfg.lightAmbient.energy,
         ]),
         ...ForwardPass.lightUniforms('light0', cfg.light0),
         ...ForwardPass.lightUniforms('light1', cfg.light1),

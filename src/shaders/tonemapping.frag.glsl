@@ -10,6 +10,7 @@ uniform float u_whitePoint;
 uniform float u_acesC;
 uniform float u_acesS;
 uniform int u_tonemappingMode;
+uniform float u_ditherStrength;
 
 
 in vec2 v_position; // TexCoords
@@ -18,6 +19,7 @@ layout(location = 0) out vec4 outColor;
 
 
 @import ./_utils;
+@import ./_dither;
 @import ./_tonemappers;
 @import ./_colorGrading;
 
@@ -43,6 +45,9 @@ vec3 doTonemapping(int tonemapMode, vec3 hdrColor) {
 void main() {
   vec2 pixelTS = to_0_1(v_position);
   vec3 colorHDR = texture(u_source, pixelTS).rgb;
+
+  // do dithering to break up banding
+  colorHDR = doDither(colorHDR, u_ditherStrength);
 
   // color grade raw HDR
   // In old days we used LUTs for this, but LUTs require conversion to LDR.

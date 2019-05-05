@@ -174,15 +174,6 @@ const renderScene = (globals: GlobalVariables) => {
     sssPosition: sssPos,
   });
 
-  // render hair
-  // TODO move AFTER SSS to avoid depth discontinuities,
-  //      may require 2nd linearize depth for nice debug output
-  const tfxPass = new TfxPass();
-  tfxPass.execute(params, {
-    getLightShadowMvp: (modelMat: mat4) => shadowPass.getLightShadowMvp(config, modelMat, shadowPos),
-    shadowLightPosition: shadowPos,
-  });
-
   // linearize depth
   const linearDepthPass = new LinearDepthPass();
   linearDepthPass.execute(params);
@@ -200,6 +191,19 @@ const renderScene = (globals: GlobalVariables) => {
     sourceTexture: frameResources.sssBlurPingPongTex,
     isFirstPass: false,
   });
+
+  // render hair
+  // we have to do it after SSS, as it would create depth discontinuities
+  // that are hard to get rid off. Since this pass writes to depth buffer,
+  // we have to update linear depth render target too (only for debug purposes,
+  // but I don't want to place 'if' inside this function, as it is very hard
+  // to track stuff like this)
+  const tfxPass = new TfxPass();
+  tfxPass.execute(params, {
+    getLightShadowMvp: (modelMat: mat4) => shadowPass.getLightShadowMvp(config, modelMat, shadowPos),
+    shadowLightPosition: shadowPos,
+  });
+  linearDepthPass.execute(params);
 
   // SSAO
   const ssaoPass = new SSAOPass();

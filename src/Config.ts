@@ -39,7 +39,9 @@ const SHADOWS_ORTHO_SIZE = 5;
 
 export class Config {
 
-  public readonly clearColor: vec3 = hexToVec3('#5d5d5d'); // [43a7a9, a0a0a0] // TODO final value
+  public readonly githubRepoLink = '//github.com/Scthe/WebFX';
+
+  public readonly clearColor: vec3 = hexToVec3('#5d5d5d');
   public readonly clearDepth: number = 1.0;
   public readonly clearStencil: number = 0;
   public readonly resizeUpdateFreq: number = 1000; // ms
@@ -143,7 +145,7 @@ export class Config {
   // <editor-fold> SSAO
   public readonly ssao = {
     textureSizeMul: 0.5, // half/quater-res, wrt. MSAA
-    kernelSize: 64,
+    kernelSize: 24,
     radius: 0.5,
     bias: 0.025,
     blurRadius: 7.0,
@@ -158,8 +160,9 @@ export class Config {
   // <editor-fold> POSTFX
   public readonly postfx = {
     gamma: 2.2,
+    ditherStrength: 1.5,
     // tonemapping
-    tonemappingOp: TonemappingMode.ACES_UE4, // TODO
+    tonemappingOp: TonemappingMode.ACES_UE4,
     exposure: 1.0, // or calc automatically?
     whitePoint: 1.0,
     acesC: 0.8,
@@ -210,11 +213,6 @@ export class Config {
 
   // <editor-fold> SINTEL
   public readonly sintel = {
-    fresnelExponent: 18, // 11.8,
-    fresnelMultiplier: 12, // 17.5,
-    fresnelColor: Vec3(0.57, 0.105, 0.218),
-    ssColor1: Vec3(0.146, 0.53, 0.178),
-    ssColor2: Vec3(0.685, 0.273, 0.158),
     modelScale: 0.1,
     centerOfGravity: Vec3(0, 3.0, 0), // used for calulating hair normals (remember, no cards!)
   };

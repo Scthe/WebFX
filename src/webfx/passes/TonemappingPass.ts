@@ -39,6 +39,7 @@ export class TonemappingPass {
     setUniforms(device, shader, {
       'u_source': frameRes.forwardColorTex,
       'u_gamma': cfg.postfx.gamma, // needed for luma, not actuall gamm (this will be after AA)
+      'u_ditherStrength': cfg.postfx.ditherStrength,
       // color grading
       ...this.prepareColorGradingParams('', colorGradCfg.global),
       ...this.prepareColorGradingParams('Shadows', colorGradCfg.shadows),

@@ -127,6 +127,7 @@ vec3 doShading(Light lights[3]) {
     vec3 specular2 = specularHighlight.y * u_specularColor2 * u_specularStrength2;
 
     // combine
+    // NOTE: this is different then usual Kajiya-Kay, I like it more
     vec3 fr = u_albedo * NdotL + specular1 + specular2;
     radianceSum += fr * radiance;
 

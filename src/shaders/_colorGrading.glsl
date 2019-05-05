@@ -1,6 +1,7 @@
 /*
   Don't ask me what is going on in this file. Copied straight from UE4.
   I probably better get some book on the subject. Any recommendations?
+  Honeslty, I'm not even sure everythin is 100% in the right color space.
 
   @see vec3 ColorCorrectAll( vec3 WorkingColor )
     in Engine\Shaders\Private\PostProcessCombineLUTs.usf

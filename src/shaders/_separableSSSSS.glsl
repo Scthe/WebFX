@@ -317,7 +317,7 @@ float3 SSSSTransmittance(
   // First we shrink the position inwards the surface to avoid artifacts:
   // (Note that this can be done once for all the lights)
   // NOTE: sssBias = 0.005
-  float4 shrinkedPos = float4(worldPosition - sssBias * worldNormal, 1.0); // TODO this is bias..
+  float4 shrinkedPos = float4(worldPosition - sssBias * worldNormal, 1.0);
 
   // Now we calculate the thickness from the light point of view:
   float4 shadowPosition = SSSSMul(shrinkedPos, lightViewProjection); // NOPE, shadowMatrix also has model matrix!

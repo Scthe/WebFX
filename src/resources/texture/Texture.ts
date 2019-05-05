@@ -93,7 +93,7 @@ const getDepthStencilGlTexImageParams = (gl: Webgl, type: GLenum) => {
  * INTERNAL FORMAT is how memory will be allocated on GPU. It is expressed
  * in 'SIZED' GLenum e.g. GL_RGBA8 (4 channels of unsigned byte each).
  *
- * On the other hand, when WRITING/READING we usually provide 3 arguments
+ * On the other hand, when WRITING/READING we usualy provide 3 arguments
  *    (GLenum format, GLenum type, GLvoid * pixels), where
  *    * 'format' is 'UNSIZED' info about channels (e.g. GL_R, GL_RG, GL_RGB, GL_RGBA),
  *    * 'type' is type in each channel
